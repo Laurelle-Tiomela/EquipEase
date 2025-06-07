@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { EquipmentShowcase } from "@/components/landing/EquipmentShowcase";
+import { DatabaseInitializer } from "@/components/DatabaseInitializer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,6 +14,21 @@ const Index = () => {
         <HeroSection />
         <FeaturesSection />
         <EquipmentShowcase />
+
+        {/* Database Setup Section */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                Database Setup
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Get started by setting up your database with sample data
+              </p>
+            </div>
+            <DatabaseInitializer />
+          </div>
+        </section>
 
         {/* Call to Action Section */}
         <section className="py-20 bg-gradient-to-r from-orange-500 to-orange-600">

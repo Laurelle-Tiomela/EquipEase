@@ -10,24 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Phone } from "lucide-react";
+import { CalendarIcon, Phone, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { mockEquipment } from "@/lib/mock-data";
+import { useEquipment, useClients, useBookings } from "@/hooks/useSupabase";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function BookingForm() {
   const [selectedEquipment, setSelectedEquipment] = useState("");
@@ -41,8 +35,13 @@ export function BookingForm() {
     address: "",
   });
   const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const selectedEquipmentData = mockEquipment.find(
+  const { equipment, loading: equipmentLoading } = useEquipment();
+  const { addClient } = useClients();
+  const { addBooking } = useBookings();
+
+  const selectedEquipmentData = equipment.find(
     (eq) => eq.id === selectedEquipment,
   );
 
@@ -55,20 +54,87 @@ export function BookingForm() {
 
     if (days >= 30) {
       const months = Math.ceil(days / 30);
-      return months * selectedEquipmentData.monthlyRate;
+      return months * selectedEquipmentData.monthly_rate;
     } else if (days >= 7) {
       const weeks = Math.ceil(days / 7);
-      return weeks * selectedEquipmentData.weeklyRate;
+      return weeks * selectedEquipmentData.weekly_rate;
     } else {
-      return days * selectedEquipmentData.dailyRate;
+      return days * selectedEquipmentData.daily_rate;
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the booking data to your backend
-    alert("Booking submitted successfully! We will contact you shortly.");
+
+    if (!selectedEquipment || !startDate || !endDate) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // First, add or find the client
+      const clientData = {
+        name: clientInfo.name,
+        email: clientInfo.email,
+        phone: clientInfo.phone,
+        company: clientInfo.company,
+        address: clientInfo.address,
+        registration_date: new Date().toISOString().split("T")[0],
+        is_online: false,
+        last_seen: new Date().toISOString(),
+      };
+
+      const client = await addClient(clientData);
+
+      // Then create the booking
+      const bookingData = {
+        client_id: client.id,
+        equipment_id: selectedEquipment,
+        start_date: startDate.toISOString().split("T")[0],
+        end_date: endDate.toISOString().split("T")[0],
+        status: "pending" as const,
+        total_amount: calculateTotal(),
+        notes: notes || undefined,
+      };
+
+      await addBooking(bookingData);
+
+      toast.success(
+        "Booking submitted successfully! We will contact you shortly.",
+      );
+
+      // Reset form
+      setSelectedEquipment("");
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setClientInfo({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        address: "",
+      });
+      setNotes("");
+    } catch (error) {
+      console.error("Booking submission error:", error);
+      toast.error("Failed to submit booking. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (equipmentLoading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="h-96 bg-gray-200 rounded-lg"></div>
+          <div className="h-96 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid lg:grid-cols-2 gap-8">
@@ -81,57 +147,63 @@ export function BookingForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {mockEquipment.map((equipment) => (
-            <div
-              key={equipment.id}
-              className={cn(
-                "p-4 border rounded-lg cursor-pointer transition-colors",
-                selectedEquipment === equipment.id
-                  ? "border-orange-500 bg-orange-50"
-                  : "border-gray-200 hover:border-gray-300",
-                equipment.availability !== "available" &&
-                  "opacity-50 cursor-not-allowed",
-              )}
-              onClick={() => {
-                if (equipment.availability === "available") {
-                  setSelectedEquipment(equipment.id);
-                }
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src={equipment.imageUrl}
-                    alt={equipment.name}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                  <div>
-                    <h3 className="font-semibold">{equipment.name}</h3>
-                    <p className="text-sm text-gray-600">
-                      {equipment.description}
-                    </p>
-                    <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
-                      <span>Daily: ${equipment.dailyRate}</span>
-                      <span>Weekly: ${equipment.weeklyRate}</span>
-                      <span>Monthly: ${equipment.monthlyRate}</span>
+          {equipment.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              No equipment available at the moment. Please check back later.
+            </p>
+          ) : (
+            equipment.map((item) => (
+              <div
+                key={item.id}
+                className={cn(
+                  "p-4 border rounded-lg cursor-pointer transition-colors",
+                  selectedEquipment === item.id
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-200 hover:border-gray-300",
+                  item.availability !== "available" &&
+                    "opacity-50 cursor-not-allowed",
+                )}
+                onClick={() => {
+                  if (item.availability === "available") {
+                    setSelectedEquipment(item.id);
+                  }
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={item.image_url || "/placeholder.svg"}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                    <div>
+                      <h3 className="font-semibold">{item.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
+                        <span>Daily: ${item.daily_rate}</span>
+                        <span>Weekly: ${item.weekly_rate}</span>
+                        <span>Monthly: ${item.monthly_rate}</span>
+                      </div>
                     </div>
                   </div>
+                  <Badge
+                    variant={
+                      item.availability === "available"
+                        ? "default"
+                        : "secondary"
+                    }
+                    className={
+                      item.availability === "available" ? "bg-green-500" : ""
+                    }
+                  >
+                    {item.availability}
+                  </Badge>
                 </div>
-                <Badge
-                  variant={
-                    equipment.availability === "available"
-                      ? "default"
-                      : "secondary"
-                  }
-                  className={
-                    equipment.availability === "available" ? "bg-green-500" : ""
-                  }
-                >
-                  {equipment.availability}
-                </Badge>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -158,6 +230,7 @@ export function BookingForm() {
                       setClientInfo({ ...clientInfo, name: e.target.value })
                     }
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div>
@@ -170,6 +243,7 @@ export function BookingForm() {
                       setClientInfo({ ...clientInfo, email: e.target.value })
                     }
                     required
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -183,6 +257,7 @@ export function BookingForm() {
                       setClientInfo({ ...clientInfo, phone: e.target.value })
                     }
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div>
@@ -193,6 +268,7 @@ export function BookingForm() {
                     onChange={(e) =>
                       setClientInfo({ ...clientInfo, company: e.target.value })
                     }
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -205,6 +281,7 @@ export function BookingForm() {
                     setClientInfo({ ...clientInfo, address: e.target.value })
                   }
                   required
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -219,6 +296,7 @@ export function BookingForm() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
+                        disabled={submitting}
                         className={cn(
                           "w-full justify-start text-left font-normal",
                           !startDate && "text-muted-foreground",
@@ -244,6 +322,7 @@ export function BookingForm() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
+                        disabled={submitting}
                         className={cn(
                           "w-full justify-start text-left font-normal",
                           !endDate && "text-muted-foreground",
@@ -274,6 +353,7 @@ export function BookingForm() {
                 placeholder="Any special requirements or delivery instructions..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
@@ -294,11 +374,24 @@ export function BookingForm() {
               <Button
                 type="submit"
                 className="flex-1 bg-orange-500 hover:bg-orange-600"
-                disabled={!selectedEquipment || !startDate || !endDate}
+                disabled={
+                  !selectedEquipment || !startDate || !endDate || submitting
+                }
               >
-                Submit Booking
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Booking"
+                )}
               </Button>
-              <Button variant="outline" className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="flex items-center space-x-2"
+                type="button"
+              >
                 <Phone className="w-4 h-4" />
                 <span>Call to Discuss</span>
               </Button>

@@ -37,8 +37,8 @@ import {
   TrendingUp,
   Filter,
 } from "lucide-react";
-import { mockDashboardStats } from "@/lib/mock-data";
-import { useState } from "react";
+import { useDashboardStats, useBookings } from "@/hooks/useSupabase";
+import { useState, useMemo } from "react";
 
 const revenueData = [
   { month: "Jan", revenue: 45000, bookings: 12 },
@@ -86,36 +86,85 @@ export function Analytics() {
   const [timeFilter, setTimeFilter] = useState("month");
   const [equipmentFilter, setEquipmentFilter] = useState("all");
 
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats();
+  const { bookings, loading: bookingsLoading } = useBookings();
+
+  // Generate revenue data from real bookings
+  const revenueData = useMemo(() => {
+    if (!bookings.length) return [];
+
+    const monthlyData = bookings
+      .filter((booking) => booking.status === "completed")
+      .reduce(
+        (acc, booking) => {
+          const date = new Date(booking.created_at);
+          const monthKey = date.toLocaleDateString("en-US", { month: "short" });
+
+          if (!acc[monthKey]) {
+            acc[monthKey] = { month: monthKey, revenue: 0, bookings: 0 };
+          }
+
+          acc[monthKey].revenue += booking.total_amount;
+          acc[monthKey].bookings += 1;
+
+          return acc;
+        },
+        {} as Record<
+          string,
+          { month: string; revenue: number; bookings: number }
+        >,
+      );
+
+    return Object.values(monthlyData).slice(-6); // Last 6 months
+  }, [bookings]);
+
   const stats = [
     {
       title: "Total Revenue",
-      value: `$${mockDashboardStats.totalRevenue.toLocaleString()}`,
-      change: `+${mockDashboardStats.monthlyGrowth}%`,
+      value: `$${dashboardStats.totalRevenue.toLocaleString()}`,
+      change: `+${dashboardStats.monthlyGrowth}%`,
       changeType: "positive" as const,
       icon: DollarSign,
     },
     {
       title: "Active Bookings",
-      value: mockDashboardStats.activeBookings.toString(),
+      value: dashboardStats.activeBookings.toString(),
       change: "+12%",
       changeType: "positive" as const,
       icon: Calendar,
     },
     {
       title: "Equipment Fleet",
-      value: mockDashboardStats.totalEquipment.toString(),
+      value: dashboardStats.totalEquipment.toString(),
       change: "+2",
       changeType: "positive" as const,
       icon: Truck,
     },
     {
       title: "Total Clients",
-      value: mockDashboardStats.clientCount.toString(),
+      value: dashboardStats.clientCount.toString(),
       change: "+8%",
       changeType: "positive" as const,
       icon: Users,
     },
   ];
+
+  if (statsLoading || bookingsLoading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-32 bg-gray-200 rounded-lg"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="h-80 bg-gray-200 rounded-lg"></div>
+          <div className="h-80 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -297,13 +346,13 @@ export function Analytics() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Overall Utilization</span>
               <span className="text-2xl font-bold text-orange-600">
-                {mockDashboardStats.utilizationRate}%
+                {dashboardStats.utilizationRate}%
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
                 className="bg-orange-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${mockDashboardStats.utilizationRate}%` }}
+                style={{ width: `${dashboardStats.utilizationRate}%` }}
               ></div>
             </div>
             <p className="text-sm text-gray-600">
