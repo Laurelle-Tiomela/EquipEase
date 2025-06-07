@@ -80,6 +80,10 @@ const sampleClients = [
 export async function initializeDatabase() {
   try {
     console.log("Initializing database with sample data...");
+    console.log("\n📋 COPY THIS SQL TO YOUR SUPABASE SQL EDITOR:");
+    console.log("=========================================");
+    console.log(createTablesSQL);
+    console.log("=========================================\n");
 
     // Check if equipment table exists and has data
     const { data: existingEquipment } = await supabase
