@@ -40,20 +40,46 @@ import { mockDashboardStats } from "@/lib/mock-data";
 import { useState } from "react";
 
 const revenueData = [
-  { month: "Jan", revenue: 45000, bookings: 12 },
-  { month: "Feb", revenue: 52000, bookings: 15 },
-  { month: "Mar", revenue: 48000, bookings: 13 },
-  { month: "Apr", revenue: 61000, bookings: 18 },
-  { month: "May", revenue: 55000, bookings: 16 },
-  { month: "Jun", revenue: 67000, bookings: 20 },
+  { month: 'Jan', revenue: 45000, bookings: 12 },
+  { month: 'Feb', revenue: 52000, bookings: 15 },
+  { month: 'Mar', revenue: 48000, bookings: 13 },
+  { month: 'Apr', revenue: 61000, bookings: 18 },
+  { month: 'May', revenue: 55000, bookings: 16 },
+  { month: 'Jun', revenue: 67000, bookings: 20 },
 ];
 
+const revenueChartConfig = {
+  revenue: {
+    label: 'Revenue',
+    color: '#f97316',
+  },
+};
+
 const equipmentUsage = [
-  { name: "Excavators", value: 35, color: "#f97316" },
-  { name: "Cranes", value: 25, color: "#3b82f6" },
-  { name: "Bulldozers", value: 20, color: "#10b981" },
-  { name: "Loaders", value: 20, color: "#8b5cf6" },
+  { name: 'Excavators', value: 35, fill: '#f97316' },
+  { name: 'Cranes', value: 25, fill: '#3b82f6' },
+  { name: 'Bulldozers', value: 20, fill: '#10b981' },
+  { name: 'Loaders', value: 20, fill: '#8b5cf6' },
 ];
+
+const equipmentChartConfig = {
+  excavators: {
+    label: 'Excavators',
+    color: '#f97316',
+  },
+  cranes: {
+    label: 'Cranes',
+    color: '#3b82f6',
+  },
+  bulldozers: {
+    label: 'Bulldozers',
+    color: '#10b981',
+  },
+  loaders: {
+    label: 'Loaders',
+    color: '#8b5cf6',
+  },
+};
 
 export function Analytics() {
   const [timeFilter, setTimeFilter] = useState("month");
@@ -201,39 +227,24 @@ export function Analytics() {
             <CardDescription>Monthly performance overview</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={revenueData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
+            <ChartContainer config={revenueChartConfig} className="h-[300px]">
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
                 <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />
-                <Tooltip
-                  formatter={(value) => [
-                    `$${value.toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                  labelStyle={{ color: "#374151" }}
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                  }}
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
                 />
-                <Bar dataKey="revenue" fill="#f97316" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="var(--color-revenue)"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -244,8 +255,8 @@ export function Analytics() {
             <CardDescription>Distribution by equipment type</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            <ChartContainer config={equipmentChartConfig} className="h-[300px]">
+              <PieChart>
                 <Pie
                   data={equipmentUsage}
                   cx="50%"
@@ -256,20 +267,17 @@ export function Analytics() {
                   labelLine={false}
                 >
                   {equipmentUsage.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value) => [`${value}%`, "Usage"]}
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                  }}
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                  formatter={(value) => [`${value}%`, 'Usage']}
                 />
               </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
+        </Card>
         </Card>
       </div>
 
