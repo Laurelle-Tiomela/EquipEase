@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Chat from "./pages/Chat";
 import Booking from "./pages/Booking";
 import Dashboard from "./pages/Dashboard";
+import Database from "./pages/Database";
 import AI from "./pages/AI";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/booking" element={<Booking />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/database" element={<Database />} />
           <Route path="/ai" element={<AI />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

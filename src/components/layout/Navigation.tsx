@@ -7,6 +7,7 @@ import {
   Calendar,
   BarChart3,
   Bot,
+  Database,
   Menu,
   X,
 } from "lucide-react";
@@ -17,6 +18,7 @@ const navItems = [
   { path: "/chat", label: "Chat", icon: MessageCircle },
   { path: "/booking", label: "Booking", icon: Calendar },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { path: "/database", label: "Database", icon: Database },
   { path: "/ai", label: "AI Assistant", icon: Bot },
 ];
 
