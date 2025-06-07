@@ -1,11 +1,5 @@
 import { useState } from "react";
 import {
-  useDashboardStats,
-  useBookings,
-  useClients,
-  useEquipment,
-} from "@/hooks/useSupabase";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -29,6 +23,12 @@ import {
   DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  useDashboardStats,
+  useBookings,
+  useClients,
+  useEquipment,
+} from "@/hooks/useSupabase";
 
 interface ChatMessage {
   id: string;
@@ -81,6 +81,83 @@ export function Chatbot() {
   const { clients } = useClients();
   const { equipment } = useEquipment();
 
+  const generateAIResponse = (query: string): string => {
+    const lowerQuery = query.toLowerCase();
+
+    if (
+      lowerQuery.includes("revenue") ||
+      lowerQuery.includes("money") ||
+      lowerQuery.includes("profit")
+    ) {
+      const completedBookings = bookings.filter(
+        (b) => b.status === "completed",
+      );
+      const totalRevenue = completedBookings.reduce(
+        (sum, b) => sum + b.total_amount,
+        0,
+      );
+      const avgBookingValue =
+        completedBookings.length > 0
+          ? totalRevenue / completedBookings.length
+          : 0;
+
+      return `Based on your current data, your total revenue is $${totalRevenue.toLocaleString()} from ${completedBookings.length} completed bookings. The average booking value is $${avgBookingValue.toFixed(0)}. Your monthly growth rate is ${stats.monthlyGrowth}%.`;
+    }
+
+    if (lowerQuery.includes("client") || lowerQuery.includes("customer")) {
+      const activeClients = clients.filter((c) => c.is_online);
+      const clientsWithBookings = new Set(bookings.map((b) => b.client_id))
+        .size;
+
+      return `You currently have ${clients.length} total clients, with ${activeClients.length} currently online. ${clientsWithBookings} clients have active or completed bookings. Recent client activity shows good engagement with your services.`;
+    }
+
+    if (
+      lowerQuery.includes("booking") ||
+      lowerQuery.includes("schedule") ||
+      lowerQuery.includes("rental")
+    ) {
+      const activeBookings = bookings.filter(
+        (b) => b.status === "active" || b.status === "confirmed",
+      );
+      const pendingBookings = bookings.filter((b) => b.status === "pending");
+
+      return `You have ${activeBookings.length} active bookings currently running and ${pendingBookings.length} pending bookings awaiting confirmation. Your equipment utilization rate is ${stats.utilizationRate}%. Total bookings in the system: ${bookings.length}.`;
+    }
+
+    if (lowerQuery.includes("equipment") || lowerQuery.includes("machinery")) {
+      const availableEquipment = equipment.filter(
+        (e) => e.availability === "available",
+      );
+      const rentedEquipment = equipment.filter(
+        (e) => e.availability === "rented",
+      );
+      const maintenanceEquipment = equipment.filter(
+        (e) => e.availability === "maintenance",
+      );
+
+      const equipmentByType = equipment.reduce(
+        (acc, eq) => {
+          acc[eq.type] = (acc[eq.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      const typeBreakdown = Object.entries(equipmentByType)
+        .map(([type, count]) => `${count} ${type}s`)
+        .join(", ");
+
+      return `Your fleet consists of ${equipment.length} equipment units: ${typeBreakdown}. Currently: ${availableEquipment.length} available, ${rentedEquipment.length} rented, ${maintenanceEquipment.length} under maintenance. Utilization rate: ${stats.utilizationRate}%.`;
+    }
+
+    if (equipment.length === 0 && clients.length === 0) {
+      return "It looks like your database hasn't been set up yet. Please use the Database Setup section on the homepage to initialize your system with sample data, or add your own equipment and clients through the application.";
+    }
+
+    return "I can help you with information about your revenue, clients, bookings, and equipment. Try asking specific questions like 'How much revenue did we generate?' or 'Which clients have active bookings?' You can also ask for comparisons, trends, or specific data analysis.";
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -106,36 +183,6 @@ export function Chatbot() {
       setMessages((prev) => [...prev, aiResponse]);
       setIsLoading(false);
     }, 1500);
-  };
-
-  const generateAIResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-
-    if (
-      lowerQuery.includes("revenue") ||
-      lowerQuery.includes("money") ||
-      lowerQuery.includes("profit")
-    ) {
-      return "Based on your current data, your total revenue this month is $67,000, which represents a 12.5% increase from last month. Your most profitable equipment categories are: 1) Cranes ($28,000), 2) Excavators ($22,000), and 3) Bulldozers ($17,000). The average daily rental rate across all equipment is $485.";
-    }
-
-    if (lowerQuery.includes("client") || lowerQuery.includes("customer")) {
-      return "You currently have 45 active clients with 8 ongoing bookings. Your top 5 clients by revenue are: 1) Smith Construction Co. ($15,200), 2) BuildRight Inc. ($12,800), 3) Metro Builders ($9,500), 4) City Construction ($8,200), and 5) Alliance Projects ($7,100). 12 clients have booked equipment in the last 30 days.";
-    }
-
-    if (
-      lowerQuery.includes("booking") ||
-      lowerQuery.includes("schedule") ||
-      lowerQuery.includes("rental")
-    ) {
-      return "You have 8 active bookings currently running and 5 confirmed future bookings. Next week's schedule includes: 2 excavator rentals, 1 crane booking, and 2 loader assignments. Your equipment utilization rate is at 78%, which is excellent. The average booking duration is 12 days.";
-    }
-
-    if (lowerQuery.includes("equipment") || lowerQuery.includes("machinery")) {
-      return "Your fleet consists of 24 equipment units: 8 excavators (5 available), 6 cranes (4 available), 5 bulldozers (3 available), and 5 loaders (4 available). 2 units are currently under maintenance. The most requested equipment type is excavators, followed by cranes.";
-    }
-
-    return "I can help you with information about your revenue, clients, bookings, and equipment. Try asking specific questions like 'How much revenue did we generate this month?' or 'Which clients have active bookings?' You can also ask for comparisons, trends, or specific data analysis.";
   };
 
   const handleSuggestionClick = (prompt: string) => {
@@ -193,6 +240,27 @@ export function Chatbot() {
               </Button>
             );
           })}
+
+          {/* Data Status */}
+          <div className="mt-6 p-3 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              Data Status
+            </h4>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span>Equipment:</span>
+                <span className="font-medium">{equipment.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Clients:</span>
+                <span className="font-medium">{clients.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bookings:</span>
+                <span className="font-medium">{bookings.length}</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -277,7 +345,7 @@ export function Chatbot() {
                     <div className="flex items-center space-x-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-sm text-gray-600">
-                        AI is thinking...
+                        AI is analyzing your data...
                       </span>
                     </div>
                   </div>
