@@ -15,15 +15,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -40,44 +41,44 @@ import { mockDashboardStats } from "@/lib/mock-data";
 import { useState } from "react";
 
 const revenueData = [
-  { month: 'Jan', revenue: 45000, bookings: 12 },
-  { month: 'Feb', revenue: 52000, bookings: 15 },
-  { month: 'Mar', revenue: 48000, bookings: 13 },
-  { month: 'Apr', revenue: 61000, bookings: 18 },
-  { month: 'May', revenue: 55000, bookings: 16 },
-  { month: 'Jun', revenue: 67000, bookings: 20 },
+  { month: "Jan", revenue: 45000, bookings: 12 },
+  { month: "Feb", revenue: 52000, bookings: 15 },
+  { month: "Mar", revenue: 48000, bookings: 13 },
+  { month: "Apr", revenue: 61000, bookings: 18 },
+  { month: "May", revenue: 55000, bookings: 16 },
+  { month: "Jun", revenue: 67000, bookings: 20 },
 ];
 
 const revenueChartConfig = {
   revenue: {
-    label: 'Revenue',
-    color: '#f97316',
+    label: "Revenue",
+    color: "#f97316",
   },
 };
 
 const equipmentUsage = [
-  { name: 'Excavators', value: 35, fill: '#f97316' },
-  { name: 'Cranes', value: 25, fill: '#3b82f6' },
-  { name: 'Bulldozers', value: 20, fill: '#10b981' },
-  { name: 'Loaders', value: 20, fill: '#8b5cf6' },
+  { name: "Excavators", value: 35, fill: "#f97316" },
+  { name: "Cranes", value: 25, fill: "#3b82f6" },
+  { name: "Bulldozers", value: 20, fill: "#10b981" },
+  { name: "Loaders", value: 20, fill: "#8b5cf6" },
 ];
 
 const equipmentChartConfig = {
   excavators: {
-    label: 'Excavators',
-    color: '#f97316',
+    label: "Excavators",
+    color: "#f97316",
   },
   cranes: {
-    label: 'Cranes',
-    color: '#3b82f6',
+    label: "Cranes",
+    color: "#3b82f6",
   },
   bulldozers: {
-    label: 'Bulldozers',
-    color: '#10b981',
+    label: "Bulldozers",
+    color: "#10b981",
   },
   loaders: {
-    label: 'Loaders',
-    color: '#8b5cf6',
+    label: "Loaders",
+    color: "#8b5cf6",
   },
 };
 
@@ -236,7 +237,10 @@ export function Analytics() {
                 />
                 <ChartTooltip
                   content={<ChartTooltipContent />}
-                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                  formatter={(value) => [
+                    `$${value.toLocaleString()}`,
+                    "Revenue",
+                  ]}
                 />
                 <Bar
                   dataKey="revenue"
@@ -272,12 +276,11 @@ export function Analytics() {
                 </Pie>
                 <ChartTooltip
                   content={<ChartTooltipContent />}
-                  formatter={(value) => [`${value}%`, 'Usage']}
+                  formatter={(value) => [`${value}%`, "Usage"]}
                 />
               </PieChart>
             </ChartContainer>
           </CardContent>
-        </Card>
         </Card>
       </div>
 
