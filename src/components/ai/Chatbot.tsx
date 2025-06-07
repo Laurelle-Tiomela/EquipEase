@@ -1,5 +1,11 @@
 import { useState } from "react";
 import {
+  useDashboardStats,
+  useBookings,
+  useClients,
+  useEquipment,
+} from "@/hooks/useSupabase";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -68,6 +74,12 @@ export function Chatbot() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+
+  // Get real data from Supabase
+  const { stats } = useDashboardStats();
+  const { bookings } = useBookings();
+  const { clients } = useClients();
+  const { equipment } = useEquipment();
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
