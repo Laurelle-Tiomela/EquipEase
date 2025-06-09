@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { initializeDatabase } from "@/lib/initDatabase";
+import { initializeSampleData } from "@/lib/enhanced-sample-data";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,13 +18,15 @@ export function DatabaseInitializer() {
 
   const handleInitialize = async () => {
     setStatus("loading");
-    setMessage("Initializing database with sample data...");
+    setMessage("Initializing database with comprehensive sample data...");
 
     try {
-      const success = await initializeDatabase();
+      const success = await initializeSampleData();
       if (success) {
         setStatus("success");
-        setMessage("Database initialized successfully with sample data!");
+        setMessage(
+          "Database initialized successfully with 5 equipment, 10 clients, 10 bookings, and sample messages!",
+        );
       } else {
         setStatus("error");
         setMessage("Failed to initialize database. Please try again.");

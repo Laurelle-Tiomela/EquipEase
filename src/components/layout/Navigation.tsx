@@ -11,6 +11,7 @@ import {
   Globe,
   Truck,
   Settings,
+  Navigation,
   Menu,
   X,
 } from "lucide-react";
@@ -21,9 +22,11 @@ const navItems = [
   { path: "/client", label: "Website", icon: Globe },
   { path: "/chat", label: "Chat", icon: MessageCircle },
   { path: "/equipment", label: "Equipment", icon: Truck },
+  { path: "/gps", label: "GPS Tracking", icon: Navigation },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/database", label: "Database", icon: Database },
   { path: "/ai", label: "AI Assistant", icon: Bot },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Navigation() {

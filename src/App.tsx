@@ -8,6 +8,9 @@ import Chat from "./pages/Chat";
 import Booking from "./pages/Booking";
 import Dashboard from "./pages/Dashboard";
 import Database from "./pages/Database";
+import Equipment from "./pages/EquipmentManagement";
+import GPS from "./pages/GPSTracking";
+import Settings from "./pages/Settings";
 import AI from "./pages/AI";
 import ClientWebsite from "./pages/ClientWebsite";
 import NotFound from "./pages/NotFound";
@@ -24,9 +27,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/client" element={<ClientWebsite />} />
           <Route path="/chat" element={<Chat />} />
-          <Route path="/booking" element={<Booking />} />
+          <Route path="/equipment" element={<Equipment />} />
+          <Route path="/gps" element={<GPS />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/database" element={<Database />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/ai" element={<AI />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
