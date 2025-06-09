@@ -208,6 +208,70 @@ export interface DashboardStats {
   }>;
 }
 
+// Client booking form interface
+export interface ClientBookingForm {
+  client_name: string;
+  email: string;
+  phone: string;
+  profession: string;
+  equipment_id: string;
+  desired_date: string;
+  desired_time: string;
+  duration_days: number;
+  destination: string;
+  use_case: string;
+  payment_method: "cash" | "card" | "bank_transfer" | "check";
+  gratitude_message?: string;
+}
+
+// Equipment availability interface
+export interface EquipmentAvailability {
+  equipment_id: string;
+  available: boolean;
+  available_date?: string;
+  current_booking?: {
+    client_name: string;
+    end_date: string;
+  };
+}
+
+// Filter options interface
+export interface FilterOptions {
+  status?: string;
+  paymentStatus?: string;
+  equipmentType?: string;
+  timeRange?: "today" | "week" | "month" | "year" | "custom";
+  startDate?: string;
+  endDate?: string;
+  reliabilityScore?: {
+    min: number;
+    max: number;
+  };
+}
+
+// Booking form data interface
+export interface BookingFormData {
+  clientName: string;
+  phone: string;
+  email: string;
+  profession: string;
+  destination: string;
+  startDate: string;
+  startTime: string;
+  duration: number;
+  paymentMethod: "cash" | "card";
+  gratitudeMessage: string;
+    revenue: number;
+    bookings: number;
+  }>;
+  equipmentPerformance: Array<{
+    equipment: Equipment;
+    utilizationRate: number;
+    revenueGenerated: number;
+    maintenanceCost: number;
+  }>;
+}
+
 export interface FilterOptions {
   timeRange: "today" | "week" | "month" | "year" | "custom";
   startDate?: string;
