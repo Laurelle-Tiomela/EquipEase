@@ -877,6 +877,29 @@ export const sampleAnalyticsData: AnalyticsData[] = [
   },
 ];
 
+// Initialize sample data function for database seeding
+export const initializeSampleData = async (): Promise<boolean> => {
+  try {
+    // For demo purposes, we're using in-memory data
+    // In a real application, this would seed the database
+    console.log("🌱 Initializing sample data...");
+
+    // Simulate database seeding delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log(`✅ Initialized ${sampleEquipment.length} equipment items`);
+    console.log(`✅ Initialized ${sampleClients.length} clients`);
+    console.log(`✅ Initialized ${sampleBookings.length} bookings`);
+    console.log(`✅ Initialized ${sampleMessages.length} messages`);
+    console.log(`✅ Sample data initialization complete!`);
+
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to initialize sample data:", error);
+    return false;
+  }
+};
+
 // Export all sample data
 export {
   sampleEquipment as equipment,
