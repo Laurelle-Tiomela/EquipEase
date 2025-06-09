@@ -278,11 +278,22 @@ export function Analytics() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={revenueChartConfig} className="h-[300px]">
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
+              <BarChart
+                data={revenueData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="month"
+                  axisLine={true}
+                  tickLine={true}
+                  type="category"
+                />
                 <YAxis
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  axisLine={true}
+                  tickLine={true}
+                  type="number"
                 />
                 <ChartTooltip
                   content={<ChartTooltipContent />}
@@ -290,11 +301,13 @@ export function Analytics() {
                     `$${value.toLocaleString()}`,
                     "Revenue",
                   ]}
+                  cursor={{ fill: "rgba(0, 0, 0, 0.1)" }}
                 />
                 <Bar
                   dataKey="revenue"
                   fill="var(--color-revenue)"
                   radius={[4, 4, 0, 0]}
+                  stroke="none"
                 />
               </BarChart>
             </ChartContainer>
@@ -309,14 +322,16 @@ export function Analytics() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={equipmentChartConfig} className="h-[300px]">
-              <PieChart>
+              <PieChart margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <Pie
                   data={equipmentUsage}
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
+                  innerRadius={0}
                   dataKey="value"
                   label={({ name, value }) => `${name}: ${value}%`}
+                  labelLine={false}
                   labelLine={false}
                 >
                   {equipmentUsage.map((entry, index) => (
