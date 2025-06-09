@@ -11,27 +11,70 @@ import {
   Globe,
   Truck,
   Settings,
-  Navigation,
+  Navigation as NavigationIcon,
   Menu,
   X,
+  User,
+  LogOut,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
-
-const navItems = [
-  { path: "/", label: "Admin Home", icon: Home },
-  { path: "/client", label: "Website", icon: Globe },
-  { path: "/chat", label: "Chat", icon: MessageCircle },
-  { path: "/equipment", label: "Equipment", icon: Truck },
-  { path: "/gps", label: "GPS Tracking", icon: Navigation },
-  { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { path: "/database", label: "Database", icon: Database },
-  { path: "/ai", label: "AI Assistant", icon: Bot },
-  { path: "/settings", label: "Settings", icon: Settings },
-];
+import { useAuth } from "../auth/AuthProvider";
 
 export function Navigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout, hasPermission } = useAuth();
+
+  const navItems = [
+    { path: "/", label: "Admin Home", icon: Home },
+    { path: "/client", label: "Website", icon: Globe },
+    {
+      path: "/equipment",
+      label: "Equipment",
+      icon: Truck,
+      permission: "equipment.edit",
+    },
+    {
+      path: "/chat",
+      label: "Chat",
+      icon: MessageCircle,
+      permission: "chat.access",
+    },
+    {
+      path: "/gps",
+      label: "GPS Tracking",
+      icon: NavigationIcon,
+      permission: "gps.view",
+    },
+    {
+      path: "/dashboard",
+      label: "Dashboard",
+      icon: BarChart3,
+      permission: "reports.view",
+    },
+    {
+      path: "/reports",
+      label: "Reports",
+      icon: FileText,
+      permission: "reports.view",
+    },
+    {
+      path: "/database",
+      label: "Database",
+      icon: Database,
+      permission: "reports.view",
+    },
+    { path: "/ai", label: "AI Assistant", icon: Bot },
+    {
+      path: "/settings",
+      label: "Settings",
+      icon: Settings,
+      permission: "settings.edit",
+    },
+  ].filter((item) => !item.permission || hasPermission(item.permission));
+
+  if (!user) return null;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -47,7 +90,7 @@ export function Navigation() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -56,21 +99,68 @@ export function Navigation() {
                 <Link key={item.path} to={item.path}>
                   <Button
                     variant={isActive ? "default" : "ghost"}
+                    size="sm"
                     className={cn(
                       "flex items-center space-x-2",
                       isActive && "bg-orange-500 hover:bg-orange-600",
                     )}
                   >
                     <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                    <span className="hidden lg:inline">{item.label}</span>
                   </Button>
                 </Link>
               );
             })}
+
+            {/* User Profile */}
+            <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-orange-600" />
+                  )}
+                </div>
+                <div className="hidden lg:block">
+                  <p className="text-sm font-medium text-gray-900">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {user.role}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <User className="h-4 w-4 text-orange-600" />
+                )}
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -112,6 +202,29 @@ export function Navigation() {
                   </Link>
                 );
               })}
+
+              {/* Mobile User Actions */}
+              <div className="pt-4 border-t border-gray-200">
+                <div className="px-4 py-2">
+                  <p className="text-sm font-medium text-gray-900">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {user.role}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start space-x-2"
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -119,3 +232,5 @@ export function Navigation() {
     </nav>
   );
 }
+
+export default Navigation;
