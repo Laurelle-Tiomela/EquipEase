@@ -9,6 +9,8 @@ import {
   Bot,
   Database,
   Globe,
+  Truck,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
@@ -16,9 +18,9 @@ import { useState } from "react";
 
 const navItems = [
   { path: "/", label: "Admin Home", icon: Home },
-  { path: "/client", label: "Client Website", icon: Globe },
+  { path: "/client", label: "Website", icon: Globe },
   { path: "/chat", label: "Chat", icon: MessageCircle },
-  { path: "/booking", label: "Booking", icon: Calendar },
+  { path: "/equipment", label: "Equipment", icon: Truck },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { path: "/database", label: "Database", icon: Database },
   { path: "/ai", label: "AI Assistant", icon: Bot },
