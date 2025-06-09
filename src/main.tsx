@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 
 // Suppress Recharts defaultProps warnings in development
-if (process.env.NODE_ENV === "development") {
+if (typeof window !== "undefined") {
   const originalWarn = console.warn;
   console.warn = (...args) => {
     // Filter out Recharts defaultProps warnings
@@ -17,7 +17,9 @@ if (process.env.NODE_ENV === "development") {
         args[0].includes("Bar") ||
         args[0].includes("Line") ||
         args[0].includes("Pie") ||
-        args[0].includes("Cell"))
+        args[0].includes("Cell") ||
+        args[0].includes("Area") ||
+        args[0].includes("ResponsiveContainer"))
     ) {
       return; // Suppress Recharts defaultProps warnings
     }
