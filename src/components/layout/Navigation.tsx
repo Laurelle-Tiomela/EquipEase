@@ -8,13 +8,15 @@ import {
   BarChart3,
   Bot,
   Database,
+  Globe,
   Menu,
   X,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
-  { path: "/", label: "Home", icon: Home },
+  { path: "/", label: "Admin Home", icon: Home },
+  { path: "/client", label: "Client Website", icon: Globe },
   { path: "/chat", label: "Chat", icon: MessageCircle },
   { path: "/booking", label: "Booking", icon: Calendar },
   { path: "/dashboard", label: "Dashboard", icon: BarChart3 },

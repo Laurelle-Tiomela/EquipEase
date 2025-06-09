@@ -9,6 +9,7 @@ import Booking from "./pages/Booking";
 import Dashboard from "./pages/Dashboard";
 import Database from "./pages/Database";
 import AI from "./pages/AI";
+import ClientWebsite from "./pages/ClientWebsite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/client" element={<ClientWebsite />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/booking" element={<Booking />} />
           <Route path="/dashboard" element={<Dashboard />} />
