@@ -42,10 +42,20 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useEnhancedBookings } from "@/hooks/useEnhancedSupabase";
-import type {
-  Equipment,
-  ClientBookingForm as BookingFormType,
-} from "@/lib/enhanced-types";
+import type { Equipment } from "@/lib/enhanced-types";
+
+interface ClientBookingFormData {
+  clientName: string;
+  phone: string;
+  email: string;
+  profession: string;
+  destination: string;
+  startDate: string;
+  startTime: string;
+  duration: number;
+  paymentMethod: "cash" | "card";
+  gratitudeMessage: string;
+}
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PaymentForm } from "./PaymentForm";
@@ -67,7 +77,7 @@ export function ClientBookingForm({
   const [success, setSuccess] = useState(false);
   const { submitClientBooking: createBooking } = useEnhancedBookings();
 
-  const [formData, setFormData] = useState<BookingFormType>({
+  const [formData, setFormData] = useState<ClientBookingFormData>({
     clientName: "",
     phone: "",
     email: "",
@@ -87,7 +97,7 @@ export function ClientBookingForm({
     { id: 4, title: "Confirmation", icon: CheckCircle },
   ];
 
-  const updateFormData = (field: keyof BookingFormType, value: any) => {
+  const updateFormData = (field: keyof ClientBookingFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -114,15 +124,18 @@ export function ClientBookingForm({
       const bookingId = `BK${Date.now()}`;
 
       const bookingData = {
-        ...formData,
-        equipmentId: equipment.id,
-        id: bookingId,
-        status: "pending" as const,
-        transactionId,
-        paymentStatus:
-          transactionId === "cash_pending"
-            ? ("pending" as const)
-            : ("completed" as const),
+        client_name: formData.clientName,
+        email: formData.email,
+        phone: formData.phone,
+        profession: formData.profession,
+        equipment_id: equipment.id,
+        desired_date: formData.startDate,
+        desired_time: formData.startTime,
+        duration_days: formData.duration,
+        destination: formData.destination,
+        use_case: formData.profession, // Use profession as use case
+        payment_method: formData.paymentMethod,
+        gratitude_message: formData.gratitudeMessage,
       };
 
       await createBooking(bookingData);
