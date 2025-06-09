@@ -25,7 +25,7 @@ export function DatabaseInitializer() {
       if (success) {
         setStatus("success");
         setMessage(
-          "Database initialized successfully with 5 equipment, 10 clients, 10 bookings, and sample messages!",
+          "Database initialized successfully with 6 equipment items, 8 clients, 13+ bookings, chat messages, and comprehensive analytics data!",
         );
       } else {
         setStatus("error");
@@ -47,8 +47,8 @@ export function DatabaseInitializer() {
           <span>Database Setup</span>
         </CardTitle>
         <CardDescription>
-          Initialize your Supabase database with sample equipment and client
-          data
+          Initialize your system with comprehensive sample data including
+          equipment, clients, bookings, and chat messages
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
