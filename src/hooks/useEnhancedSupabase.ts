@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/enhanced-supabase";
+import {
+  equipment as sampleEquipment,
+  clients as sampleClients,
+  bookings as sampleBookings,
+  messages as sampleMessages,
+  businessSettings as sampleBusinessSettings,
+} from "@/lib/enhanced-sample-data";
 import type {
   Equipment,
   Client,
@@ -26,13 +33,9 @@ export function useEnhancedEquipment() {
 
   const fetchEquipment = async () => {
     try {
-      const { data, error } = await supabase
-        .from("equipment")
-        .select("*")
-        .order("popularity_score", { ascending: false });
-
-      if (error) throw error;
-      setEquipment(data || []);
+      // For demo purposes, use sample data instead of database
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
+      setEquipment(sampleEquipment);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -126,13 +129,18 @@ export function useEnhancedClients(filters?: FilterOptions) {
 
   const fetchClients = async () => {
     try {
-      let query = supabase.from("clients").select("*");
+      // For demo purposes, use sample data instead of database
+      await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API delay
 
-      // Apply filters
+      let filteredClients = [...sampleClients];
+
+      // Apply filters to sample data
       if (filters?.reliabilityScore) {
-        query = query
-          .gte("reliability_score", filters.reliabilityScore.min)
-          .lte("reliability_score", filters.reliabilityScore.max);
+        filteredClients = filteredClients.filter(
+          (client) =>
+            client.reliability_score >= filters.reliabilityScore!.min &&
+            client.reliability_score <= filters.reliabilityScore!.max,
+        );
       }
 
       if (filters?.timeRange && filters.timeRange !== "custom") {
@@ -160,15 +168,15 @@ export function useEnhancedClients(filters?: FilterOptions) {
             startDate = new Date(0);
         }
 
-        query = query.gte("created_at", startDate.toISOString());
+        filteredClients = filteredClients.filter(
+          (client) => new Date(client.created_at) >= startDate,
+        );
       }
 
-      const { data, error } = await query.order("reliability_score", {
-        ascending: false,
-      });
+      // Sort by reliability score
+      filteredClients.sort((a, b) => b.reliability_score - a.reliability_score);
 
-      if (error) throw error;
-      setClients(data || []);
+      setClients(filteredClients);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -216,23 +224,31 @@ export function useEnhancedBookings(filters?: FilterOptions) {
 
   const fetchBookings = async () => {
     try {
-      let query = supabase.from("bookings").select(`
-          *,
-          clients(name, email, phone, company),
-          equipment(name, type, image_url)
-        `);
+      // For demo purposes, use sample data instead of database
+      await new Promise((resolve) => setTimeout(resolve, 400)); // Simulate API delay
 
-      // Apply filters
+      let filteredBookings = [...sampleBookings];
+
+      // Apply filters to sample data
       if (filters?.status) {
-        query = query.eq("status", filters.status);
+        filteredBookings = filteredBookings.filter(
+          (booking) => booking.status === filters.status,
+        );
       }
 
       if (filters?.paymentStatus) {
-        query = query.eq("payment_status", filters.paymentStatus);
+        filteredBookings = filteredBookings.filter(
+          (booking) => booking.payment_status === filters.paymentStatus,
+        );
       }
 
       if (filters?.equipmentType) {
-        query = query.eq("equipment.type", filters.equipmentType);
+        filteredBookings = filteredBookings.filter((booking) => {
+          const equipment = sampleEquipment.find(
+            (eq) => eq.id === booking.equipment_id,
+          );
+          return equipment?.type === filters.equipmentType;
+        });
       }
 
       if (filters?.timeRange && filters.timeRange !== "custom") {
@@ -260,21 +276,26 @@ export function useEnhancedBookings(filters?: FilterOptions) {
             startDate = new Date(0);
         }
 
-        query = query.gte("created_at", startDate.toISOString());
+        filteredBookings = filteredBookings.filter(
+          (booking) => new Date(booking.created_at) >= startDate,
+        );
       }
 
       if (filters?.startDate && filters?.endDate) {
-        query = query
-          .gte("start_date", filters.startDate)
-          .lte("end_date", filters.endDate);
+        filteredBookings = filteredBookings.filter(
+          (booking) =>
+            booking.start_date >= filters.startDate! &&
+            booking.end_date <= filters.endDate!,
+        );
       }
 
-      const { data, error } = await query.order("created_at", {
-        ascending: false,
-      });
+      // Sort by creation date
+      filteredBookings.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
 
-      if (error) throw error;
-      setBookings(data || []);
+      setBookings(filteredBookings);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -459,25 +480,12 @@ export function useEnhancedDashboard(filters?: FilterOptions) {
 
   const fetchDashboardStats = async () => {
     try {
-      // Fetch all necessary data
-      const [bookingsResult, equipmentResult, clientsResult] =
-        await Promise.all([
-          supabase.from("bookings").select(`
-          *,
-          clients(name, total_spent),
-          equipment(name, type)
-        `),
-          supabase.from("equipment").select("*"),
-          supabase.from("clients").select("*"),
-        ]);
+      // For demo purposes, use sample data instead of database
+      await new Promise((resolve) => setTimeout(resolve, 600)); // Simulate API delay
 
-      if (bookingsResult.error) throw bookingsResult.error;
-      if (equipmentResult.error) throw equipmentResult.error;
-      if (clientsResult.error) throw clientsResult.error;
-
-      const bookings = bookingsResult.data || [];
-      const equipment = equipmentResult.data || [];
-      const clients = clientsResult.data || [];
+      const bookings = sampleBookings;
+      const equipment = sampleEquipment;
+      const clients = sampleClients;
 
       // Calculate revenue metrics
       const now = new Date();
@@ -712,19 +720,9 @@ export function useMessages() {
 
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select(
-          `
-          *,
-          sender:sender_id(name, avatar_url),
-          receiver:receiver_id(name, avatar_url)
-        `,
-        )
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      setMessages(data || []);
+      // For demo purposes, use sample data instead of database
+      await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate API delay
+      setMessages(sampleMessages);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch messages");
     } finally {
