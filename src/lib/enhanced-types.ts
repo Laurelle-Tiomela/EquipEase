@@ -249,7 +249,7 @@ export interface FilterOptions {
   };
 }
 
-// Booking form data interface
+// Booking form data interface for client forms
 export interface BookingFormData {
   clientName: string;
   phone: string;
@@ -261,52 +261,115 @@ export interface BookingFormData {
   duration: number;
   paymentMethod: "cash" | "card";
   gratitudeMessage: string;
-    revenue: number;
-    bookings: number;
-  }>;
-  equipmentPerformance: Array<{
-    equipment: Equipment;
-    utilizationRate: number;
-    revenueGenerated: number;
-    maintenanceCost: number;
+}
+
+// GPS tracking data
+export interface GPSLocation {
+  lat: number;
+  lng: number;
+  timestamp: string;
+  speed?: number;
+  heading?: number;
+  accuracy?: number;
+}
+
+export interface EquipmentGPSData {
+  equipment_id: string;
+  current_location: GPSLocation;
+  last_updated: string;
+  status: "online" | "offline" | "low_battery";
+  geofence_alerts?: Array<{
+    type: "entry" | "exit";
+    location: string;
+    timestamp: string;
   }>;
 }
 
-export interface FilterOptions {
-  timeRange: "today" | "week" | "month" | "year" | "custom";
-  startDate?: string;
-  endDate?: string;
-  equipmentType?: Equipment["type"];
-  clientId?: string;
-  status?: Booking["status"];
-  reliabilityScore?: { min: number; max: number };
-  paymentStatus?: Booking["payment_status"];
-  rentalDuration?: { min: number; max: number };
+// Payment interfaces
+export interface PaymentIntent {
+  id: string;
+  amount: number;
+  currency: string;
+  status: "requires_payment_method" | "succeeded" | "processing" | "canceled";
+  client_secret?: string;
 }
 
-// Client Website Types
-export interface ClientBookingForm {
-  client_name: string;
-  phone: string;
+export interface PaymentResult {
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+}
+
+// Notification interfaces
+export interface Notification {
+  id: string;
+  type: "booking" | "payment" | "maintenance" | "system";
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  read: boolean;
+  created_at: string;
+}
+
+// User authentication interfaces
+export interface User {
+  id: string;
   email: string;
-  profession: string;
-  destination: string;
-  use_case: string;
-  desired_date: string;
-  desired_time: string;
-  duration_days: number;
-  payment_method: Booking["payment_method"];
-  gratitude_message?: string;
-  equipment_id: string;
+  name: string;
+  role: "admin" | "operator" | "viewer";
+  avatar?: string;
+  permissions: string[];
+  created_at: string;
+  last_login?: string;
 }
 
-export interface EquipmentAvailability {
-  equipment_id: string;
-  available: boolean;
-  available_date?: string;
-  next_available_time?: string;
-  current_booking?: {
-    client_name: string;
-    end_date: string;
-  };
+export interface AuthState {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
 }
+
+// Equipment category interface
+export interface EquipmentCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  equipment_count: number;
+}
+
+// Report interfaces
+export interface ReportData {
+  id: string;
+  title: string;
+  type: "revenue" | "utilization" | "client_analysis" | "maintenance";
+  date_range: {
+    start: string;
+    end: string;
+  };
+  data: Record<string, any>;
+  generated_at: string;
+  generated_by: string;
+}
+
+// Export types for forms and API responses
+export type CreateEquipmentRequest = Omit<
+  Equipment,
+  "id" | "created_at" | "updated_at" | "popularity_score"
+>;
+export type UpdateEquipmentRequest = Partial<CreateEquipmentRequest>;
+export type CreateClientRequest = Omit<
+  Client,
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "registration_date"
+  | "total_bookings"
+  | "total_spent"
+>;
+export type UpdateClientRequest = Partial<CreateClientRequest>;
+export type CreateBookingRequest = Omit<
+  Booking,
+  "id" | "created_at" | "updated_at" | "total_amount"
+>;
+export type UpdateBookingRequest = Partial<CreateBookingRequest>;
