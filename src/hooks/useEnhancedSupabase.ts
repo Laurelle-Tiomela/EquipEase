@@ -699,3 +699,120 @@ export function useBusinessSettings() {
 
   return { settings, loading, error, updateSettings, fetchSettings };
 }
+
+// Messages hook for communication
+export function useMessages() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select(
+          `
+          *,
+          sender:sender_id(name, avatar_url),
+          receiver:receiver_id(name, avatar_url)
+        `,
+        )
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch messages");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendMessage = async (
+    receiverId: string,
+    content: string,
+    type: "text" | "image" | "file" = "text",
+  ) => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: "admin", // Replace with actual sender ID
+          receiver_id: receiverId,
+          content,
+          type,
+          status: "sent",
+        })
+        .select(
+          `
+          *,
+          sender:sender_id(name, avatar_url),
+          receiver:receiver_id(name, avatar_url)
+        `,
+        )
+        .single();
+
+      if (error) throw error;
+      setMessages((prev) => [...prev, data]);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+      throw err;
+    }
+  };
+
+  return { messages, loading, error, fetchMessages, sendMessage };
+}
+
+// Main combined hook for components that need multiple data types
+export function useEnhancedSupabase() {
+  const equipmentData = useEnhancedEquipment();
+  const clientsData = useEnhancedClients();
+  const bookingsData = useEnhancedBookings();
+  const dashboardData = useEnhancedDashboard();
+  const settingsData = useBusinessSettings();
+
+  return {
+    // Equipment data
+    equipment: equipmentData.equipment,
+    equipmentLoading: equipmentData.loading,
+    equipmentError: equipmentData.error,
+    fetchEquipment: equipmentData.fetchEquipment,
+    updateEquipmentLocation: equipmentData.updateEquipmentLocation,
+    getEquipmentAvailability: equipmentData.getEquipmentAvailability,
+
+    // Clients data
+    clients: clientsData.clients,
+    clientsLoading: clientsData.loading,
+    clientsError: clientsData.error,
+    fetchClients: clientsData.fetchClients,
+    updateClientReliability: clientsData.updateClientReliability,
+
+    // Bookings data
+    bookings: bookingsData.bookings,
+    bookingsLoading: bookingsData.loading,
+    bookingsError: bookingsData.error,
+    fetchBookings: bookingsData.fetchBookings,
+    submitClientBooking: bookingsData.submitClientBooking,
+    approveBooking: bookingsData.approveBooking,
+    rejectBooking: bookingsData.rejectBooking,
+    createBooking: bookingsData.submitClientBooking, // Alias for consistency
+
+    // Dashboard data
+    stats: dashboardData.stats,
+    dashboardLoading: dashboardData.loading,
+    dashboardError: dashboardData.error,
+    fetchDashboardStats: dashboardData.fetchDashboardStats,
+
+    // Settings data
+    settings: settingsData.settings,
+    settingsLoading: settingsData.loading,
+    settingsError: settingsData.error,
+    updateSettings: settingsData.updateSettings,
+    fetchSettings: settingsData.fetchSettings,
+  };
+}

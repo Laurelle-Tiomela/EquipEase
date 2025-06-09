@@ -65,7 +65,7 @@ export function ClientBookingForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { createBooking } = useEnhancedBookings();
+  const { submitClientBooking: createBooking } = useEnhancedBookings();
 
   const [formData, setFormData] = useState<BookingFormType>({
     clientName: "",
