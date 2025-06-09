@@ -15,10 +15,23 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { CreditCard, Lock, CheckCircle, AlertCircle } from "lucide-react";
-import { BookingFormData, Equipment } from "../../lib/enhanced-types";
+import { Equipment } from "../../lib/enhanced-types";
+
+interface PaymentFormData {
+  clientName: string;
+  phone: string;
+  email: string;
+  profession: string;
+  destination: string;
+  startDate: string;
+  startTime: string;
+  duration: number;
+  paymentMethod: "cash" | "card";
+  gratitudeMessage: string;
+}
 
 interface PaymentFormProps {
-  bookingData: BookingFormData;
+  bookingData: PaymentFormData;
   equipment: Equipment;
   onPaymentSuccess: (transactionId: string) => void;
   onBack: () => void;
