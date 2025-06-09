@@ -332,7 +332,6 @@ export function Analytics() {
                   dataKey="value"
                   label={({ name, value }) => `${name}: ${value}%`}
                   labelLine={false}
-                  labelLine={false}
                 >
                   {equipmentUsage.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
