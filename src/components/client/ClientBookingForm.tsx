@@ -479,19 +479,47 @@ export function ClientBookingForm({
             </div>
           )}
 
-          {/* Step 3: Payment Method */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div>
-                <Label className="flex items-center space-x-2 mb-4">
-                  <CreditCard className="w-4 h-4" />
-                  <span>Payment Method *</span>
-                </Label>
+          {/* Step 3: Payment */}
+          {currentStep === 3 && (
+            <PaymentForm
+              bookingData={formData}
+              equipment={equipment}
+              onPaymentSuccess={handlePaymentSuccess}
+              onBack={() => setCurrentStep(2)}
+            />
+          )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { value: "card", label: "Credit/Debit Card", icon: "💳" },
-                    {
+          {/* Step 4: Confirmation */}
+          {currentStep === 4 && success && (
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Booking Submitted Successfully!
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Thank you for choosing EquipEase. We've received your booking request.
+                </p>
+
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-blue-900 mb-2">What's Next?</h4>
+                  <ul className="text-sm text-blue-800 space-y-1 text-left">
+                    <li>• You'll receive a confirmation email shortly</li>
+                    <li>• Our team will review your booking within 24 hours</li>
+                    <li>• We'll contact you to confirm delivery details</li>
+                    <li>• Equipment will be delivered on your selected date</li>
+                  </ul>
+                </div>
+
+                <p className="text-sm text-gray-500">
+                  Booking Reference: BK{Date.now().toString().slice(-6)}
+                </p>
+              </div>
+            </div>
+          )}
                       value: "bank_transfer",
                       label: "Bank Transfer",
                       icon: "🏦",
