@@ -304,21 +304,36 @@ export function EnhancedDashboard() {
                   config={revenueChartConfig}
                   className="h-[300px]"
                 >
-                  <AreaChart data={stats.revenueByPeriod}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
+                  <AreaChart
+                    data={stats.revenueByPeriod}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="period"
+                      axisLine={true}
+                      tickLine={true}
+                      type="category"
+                    />
                     <YAxis
                       tickFormatter={(value) =>
                         `$${(value / 1000).toFixed(0)}k`
                       }
+                      axisLine={true}
+                      tickLine={true}
+                      type="number"
                     />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      cursor={{ fill: "rgba(0, 0, 0, 0.1)" }}
+                    />
                     <Area
                       type="monotone"
                       dataKey="revenue"
                       stroke="var(--color-revenue)"
                       fill="var(--color-revenue)"
                       fillOpacity={0.3}
+                      strokeWidth={2}
                     />
                   </AreaChart>
                 </ChartContainer>
