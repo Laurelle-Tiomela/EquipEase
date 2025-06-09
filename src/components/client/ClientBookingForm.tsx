@@ -59,7 +59,7 @@ interface ClientBookingFormData {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PaymentForm } from "./PaymentForm";
-import { emailService } from "../../lib/email-service";
+import { emailService } from "@/lib/email-service";
 
 interface ClientBookingFormProps {
   equipment?: Equipment;

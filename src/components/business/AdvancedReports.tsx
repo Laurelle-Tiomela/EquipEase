@@ -20,7 +20,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { useEnhancedSupabase } from "../../hooks/useEnhancedSupabase";
+import { useEnhancedSupabase } from "@/hooks/useEnhancedSupabase";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 
 interface ReportFilter {

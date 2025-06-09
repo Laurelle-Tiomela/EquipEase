@@ -11,11 +11,11 @@ import {
   formatCurrency,
   mockPaymentProcess,
 } from "../../lib/stripe";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Separator } from "../ui/separator";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { CreditCard, Lock, CheckCircle, AlertCircle } from "lucide-react";
-import { Equipment } from "../../lib/enhanced-types";
+import { Equipment } from "@/lib/enhanced-types";
 
 interface PaymentFormData {
   clientName: string;
