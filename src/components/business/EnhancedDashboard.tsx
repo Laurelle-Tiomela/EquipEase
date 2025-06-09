@@ -421,18 +421,27 @@ export function EnhancedDashboard() {
               </CardHeader>
               <CardContent>
                 <ChartContainer config={{}} className="h-[300px]">
-                  <BarChart data={stats.equipmentPerformance.slice(0, 6)}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                  <BarChart
+                    data={stats.equipmentPerformance.slice(0, 6)}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis
                       dataKey="equipment.name"
                       angle={-45}
                       textAnchor="end"
                       height={100}
+                      axisLine={true}
+                      tickLine={true}
+                      type="category"
                     />
                     <YAxis
                       tickFormatter={(value) =>
                         `$${(value / 1000).toFixed(0)}k`
                       }
+                      axisLine={true}
+                      tickLine={true}
+                      type="number"
                     />
                     <ChartTooltip
                       content={<ChartTooltipContent />}
@@ -440,8 +449,14 @@ export function EnhancedDashboard() {
                         `$${value.toLocaleString()}`,
                         "Revenue",
                       ]}
+                      cursor={{ fill: "rgba(0, 0, 0, 0.1)" }}
                     />
-                    <Bar dataKey="revenueGenerated" fill="#f97316" />
+                    <Bar
+                      dataKey="revenueGenerated"
+                      fill="#f97316"
+                      stroke="none"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
