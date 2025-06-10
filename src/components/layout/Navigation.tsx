@@ -20,55 +20,57 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Navigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout, hasPermission } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
-    { path: "/", label: "Admin Home", icon: Home },
-    { path: "/client", label: "Website", icon: Globe },
+    { path: "/", label: t("nav.admin_home"), icon: Home },
+    { path: "/client", label: t("nav.website"), icon: Globe },
     {
       path: "/equipment",
-      label: "Equipment",
+      label: t("nav.equipment"),
       icon: Truck,
       permission: "equipment.edit",
     },
     {
       path: "/chat",
-      label: "Chat",
+      label: t("nav.chat"),
       icon: MessageCircle,
       permission: "chat.access",
     },
     {
       path: "/gps",
-      label: "GPS Tracking",
+      label: t("nav.gps_tracking"),
       icon: NavigationIcon,
       permission: "gps.view",
     },
     {
       path: "/dashboard",
-      label: "Dashboard",
+      label: t("nav.dashboard"),
       icon: BarChart3,
       permission: "reports.view",
     },
     {
       path: "/reports",
-      label: "Reports",
+      label: t("nav.reports"),
       icon: FileText,
       permission: "reports.view",
     },
     {
       path: "/database",
-      label: "Database",
+      label: t("nav.database"),
       icon: Database,
       permission: "reports.view",
     },
-    { path: "/ai", label: "AI Assistant", icon: Bot },
+    { path: "/ai", label: t("nav.ai_assistant"), icon: Bot },
     {
       path: "/settings",
-      label: "Settings",
+      label: t("nav.settings"),
       icon: Settings,
       permission: "settings.edit",
     },
@@ -222,7 +224,7 @@ export function Navigation() {
                   }}
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
+                  <span>{t("nav.sign_out")}</span>
                 </Button>
               </div>
             </div>
