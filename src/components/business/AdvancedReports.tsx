@@ -72,14 +72,14 @@ export const AdvancedReports: React.FC = () => {
     }
 
     filtered = filtered.filter((booking) => {
-      const bookingDate = new Date(booking.startDate);
+      const bookingDate = new Date(booking.start_date);
       return bookingDate >= startDate && bookingDate <= endDate;
     });
 
     // Apply equipment filter
     if (filter.equipment) {
       filtered = filtered.filter(
-        (booking) => booking.equipmentId === filter.equipment,
+        (booking) => booking.equipment_id === filter.equipment,
       );
     }
 
@@ -90,9 +90,11 @@ export const AdvancedReports: React.FC = () => {
 
     const revenue = filtered.reduce((sum, booking) => {
       const equipmentItem = equipment?.find(
-        (e) => e.id === booking.equipmentId,
+        (e) => e.id === booking.equipment_id,
       );
-      return sum + (equipmentItem?.dailyRate || 0) * (booking.duration || 1);
+      return (
+        sum + (equipmentItem?.daily_rate || 0) * (booking.duration_days || 1)
+      );
     }, 0);
 
     const avgBookingValue = filtered.length > 0 ? revenue / filtered.length : 0;
@@ -119,11 +121,11 @@ export const AdvancedReports: React.FC = () => {
     const equipmentUtilization = equipment
       .map((eq) => {
         const bookingCount = filteredData.bookings.filter(
-          (b) => b.equipmentId === eq.id,
+          (b) => b.equipment_id === eq.id,
         ).length;
         const revenue = filteredData.bookings
-          .filter((b) => b.equipmentId === eq.id)
-          .reduce((sum, b) => sum + eq.dailyRate * (b.duration || 1), 0);
+          .filter((b) => b.equipment_id === eq.id)
+          .reduce((sum, b) => sum + eq.daily_rate * (b.duration_days || 1), 0);
 
         return {
           equipment: eq,
@@ -138,11 +140,11 @@ export const AdvancedReports: React.FC = () => {
     const clientAnalysis = clients
       .map((client) => {
         const clientBookings = filteredData.bookings.filter(
-          (b) => b.clientId === client.id,
+          (b) => b.client_id === client.id,
         );
         const totalSpent = clientBookings.reduce((sum, booking) => {
-          const eq = equipment.find((e) => e.id === booking.equipmentId);
-          return sum + (eq?.dailyRate || 0) * (booking.duration || 1);
+          const eq = equipment.find((e) => e.id === booking.equipment_id);
+          return sum + (eq?.daily_rate || 0) * (booking.duration_days || 1);
         }, 0);
 
         return {
@@ -153,7 +155,7 @@ export const AdvancedReports: React.FC = () => {
             clientBookings.length > 0 ? totalSpent / clientBookings.length : 0,
           lastBooking: clientBookings.reduce(
             (latest, current) =>
-              new Date(current.startDate) > new Date(latest?.startDate || 0)
+              new Date(current.start_date) > new Date(latest?.start_date || 0)
                 ? current
                 : latest,
             null as any,
@@ -181,21 +183,28 @@ export const AdvancedReports: React.FC = () => {
 
       if (format === "csv") {
         const csvData = filteredData.bookings.map((booking) => {
-          const eq = equipment?.find((e) => e.id === booking.equipmentId);
-          const client = clients?.find((c) => c.id === booking.clientId);
+          const eq = equipment?.find((e) => e.id === booking.equipment_id);
+          const client = clients?.find((c) => c.id === booking.client_id);
           return {
             "Booking ID": booking.id,
             Client: client?.name || "Unknown",
+            Company: client?.company || "Unknown",
             Equipment: eq?.name || "Unknown",
-            "Start Date": booking.startDate,
-            Duration: booking.duration,
+            "Start Date": booking.start_date,
+            "End Date": booking.end_date,
+            Duration: booking.duration_days,
             Status: booking.status,
-            Revenue: (eq?.dailyRate || 0) * (booking.duration || 1),
+            "Daily Rate": eq?.daily_rate || 0,
+            "Total Amount": booking.total_amount,
+            "Payment Status": booking.payment_status,
+            Revenue: (eq?.daily_rate || 0) * (booking.duration_days || 1),
           };
         });
 
         console.log("CSV Export:", csvData);
-        alert("CSV export completed! Check browser downloads.");
+        alert(
+          `CSV export completed! ${csvData.length} bookings exported. Check browser downloads.`,
+        );
       } else {
         console.log("PDF Export: Generated report with charts and analytics");
         alert("PDF export completed! Check browser downloads.");
@@ -436,7 +445,7 @@ export const AdvancedReports: React.FC = () => {
                       <div>
                         <h3 className="font-medium">{item.equipment.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {item.equipment.category}
+                          {item.equipment.type}
                         </p>
                       </div>
                     </div>
@@ -450,6 +459,12 @@ export const AdvancedReports: React.FC = () => {
                         <p className="text-sm text-gray-600">Revenue</p>
                         <p className="font-bold">
                           ${item.revenue.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Daily Rate</p>
+                        <p className="font-bold">
+                          ${item.equipment.daily_rate}
                         </p>
                       </div>
                       <div className="text-center">
@@ -489,7 +504,7 @@ export const AdvancedReports: React.FC = () => {
                       <div>
                         <h3 className="font-medium">{item.client.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {item.client.profession}
+                          {item.client.company}
                         </p>
                       </div>
                     </div>
@@ -512,7 +527,7 @@ export const AdvancedReports: React.FC = () => {
                         </p>
                       </div>
                       <Badge variant="outline">
-                        ⭐ {item.client.reliabilityScore}/5
+                        ⭐ {item.client.reliability_score}/10
                       </Badge>
                     </div>
                   </div>
@@ -534,6 +549,8 @@ export const AdvancedReports: React.FC = () => {
                     const getStatusIcon = () => {
                       switch (status) {
                         case "approved":
+                        case "active":
+                        case "completed":
                           return (
                             <CheckCircle className="h-6 w-6 text-green-600" />
                           );
@@ -551,6 +568,8 @@ export const AdvancedReports: React.FC = () => {
                     const getStatusColor = () => {
                       switch (status) {
                         case "approved":
+                        case "active":
+                        case "completed":
                           return "bg-green-100";
                         case "cancelled":
                           return "bg-red-100";
@@ -583,6 +602,60 @@ export const AdvancedReports: React.FC = () => {
                   },
                 )}
               </div>
+
+              {/* Recent Bookings List */}
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4">Recent Bookings</h3>
+                <div className="space-y-2">
+                  {filteredData.bookings.slice(0, 5).map((booking) => {
+                    const equipment = equipment?.find(
+                      (e) => e.id === booking.equipment_id,
+                    );
+                    const client = clients?.find(
+                      (c) => c.id === booking.client_id,
+                    );
+
+                    return (
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Badge
+                            variant={
+                              booking.status === "active"
+                                ? "default"
+                                : booking.status === "completed"
+                                  ? "secondary"
+                                  : booking.status === "pending"
+                                    ? "outline"
+                                    : "destructive"
+                            }
+                          >
+                            {booking.status}
+                          </Badge>
+                          <div>
+                            <p className="font-medium">
+                              {equipment?.name || "Unknown Equipment"}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {client?.name || "Unknown Client"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            ${booking.total_amount?.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {booking.duration_days} days
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -594,50 +667,90 @@ export const AdvancedReports: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Peak Hours */}
+                {/* Peak Performance */}
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <h3 className="font-medium mb-2">📈 Peak Booking Hours</h3>
-                  <p className="text-sm text-gray-600">
-                    Most bookings are made between 9 AM - 11 AM and 2 PM - 4 PM
-                    on weekdays.
-                  </p>
-                </div>
-
-                {/* Popular Equipment */}
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <h3 className="font-medium mb-2">
-                    🏆 Most Popular Equipment
-                  </h3>
+                  <h3 className="font-medium mb-2">📈 Peak Performance</h3>
                   <p className="text-sm text-gray-600">
                     {metrics.equipmentUtilization[0]?.equipment.name ||
-                      "No data"}{" "}
+                      "No equipment"}{" "}
                     is your top performer with{" "}
                     {metrics.equipmentUtilization[0]?.bookings || 0} bookings
-                    this period.
+                    generating $
+                    {metrics.equipmentUtilization[0]?.revenue.toLocaleString() ||
+                      0}{" "}
+                    in revenue.
                   </p>
                 </div>
 
-                {/* Revenue Growth */}
-                <div className="p-4 bg-purple-50 rounded-lg">
+                {/* Revenue Insights */}
+                <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-medium mb-2">💰 Revenue Insights</h3>
                   <p className="text-sm text-gray-600">
-                    Average booking value is $
-                    {metrics.avgBookingValue.toFixed(0)}. Consider upselling
-                    maintenance packages to increase value.
+                    Total revenue for the selected period: $
+                    {metrics.totalRevenue.toLocaleString()}. Average booking
+                    value is ${metrics.avgBookingValue.toFixed(0)}.
+                    {metrics.avgBookingValue > 1000
+                      ? "Excellent performance!"
+                      : "Consider upselling maintenance packages to increase value."}
                   </p>
                 </div>
 
-                {/* Customer Retention */}
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <h3 className="font-medium mb-2">👥 Customer Retention</h3>
+                {/* Customer Analysis */}
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h3 className="font-medium mb-2">👥 Customer Analysis</h3>
                   <p className="text-sm text-gray-600">
+                    Top customer:{" "}
+                    {metrics.clientAnalysis[0]?.client.name || "No data"} with $
+                    {metrics.clientAnalysis[0]?.totalSpent.toLocaleString() ||
+                      0}{" "}
+                    spent.
                     {
                       metrics.clientAnalysis.filter((c) => c.bookings > 1)
                         .length
                     }{" "}
-                    of {metrics.clientAnalysis.length}
-                    clients are repeat customers. Focus on loyalty programs to
-                    increase retention.
+                    of {metrics.clientAnalysis.length} clients are repeat
+                    customers.
+                  </p>
+                </div>
+
+                {/* Operational Efficiency */}
+                <div className="p-4 bg-orange-50 rounded-lg">
+                  <h3 className="font-medium mb-2">
+                    ⚡ Operational Efficiency
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Approval rate:{" "}
+                    {metrics.totalBookings > 0
+                      ? Math.round(
+                          ((metrics.statusBreakdown.approved || 0) /
+                            metrics.totalBookings) *
+                            100,
+                        )
+                      : 0}
+                    %. Active bookings: {metrics.statusBreakdown.active || 0}.
+                    {(metrics.statusBreakdown.pending || 0) > 5
+                      ? "High pending bookings - consider faster approval process."
+                      : "Good booking flow!"}
+                  </p>
+                </div>
+
+                {/* Growth Opportunities */}
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h3 className="font-medium mb-2">🚀 Growth Opportunities</h3>
+                  <p className="text-sm text-gray-600">
+                    Equipment with low utilization:{" "}
+                    {
+                      metrics.equipmentUtilization.filter(
+                        (e) => e.utilizationRate < 10,
+                      ).length
+                    }{" "}
+                    items. Consider promotion or maintenance scheduling. Focus
+                    on loyalty programs for{" "}
+                    {
+                      metrics.clientAnalysis.filter((c) => c.bookings === 1)
+                        .length
+                    }{" "}
+                    one-time customers.
                   </p>
                 </div>
               </div>
