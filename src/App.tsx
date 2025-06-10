@@ -36,7 +36,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {user && <Navigation />}
-      <main className={user ? "pt-0" : ""}>
+      <main className="w-full">
         <Routes>
           {/* Public route - no authentication required */}
           <Route path="/client" element={<ClientWebsite />} />
