@@ -7,122 +7,36 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  Loader2,
   Truck,
   Users,
   Calendar,
   MessageSquare,
   RefreshCw,
+  DollarSign,
+  TrendingUp,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Clock,
 } from "lucide-react";
-import {
-  useEquipment,
-  useClients,
-  useBookings,
-  useMessages,
-} from "@/hooks/useSupabase";
+import { useEnhancedSupabase, useMessages } from "@/hooks/useEnhancedSupabase";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 export function DatabaseManager() {
-  const [activeTab, setActiveTab] = useState("equipment");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-
+  const [activeTab, setActiveTab] = useState("overview");
   const {
     equipment,
-    loading: equipmentLoading,
-    addEquipment,
-    updateEquipment,
-  } = useEquipment();
-  const { clients, loading: clientsLoading } = useClients();
-  const {
+    clients,
     bookings,
-    loading: bookingsLoading,
-    updateBookingStatus,
-  } = useBookings();
-  const { messages, loading: messagesLoading } = useMessages();
-
-  const [newEquipment, setNewEquipment] = useState({
-    name: "",
-    type: "excavator" as const,
-    description: "",
-    daily_rate: 0,
-    weekly_rate: 0,
-    monthly_rate: 0,
-    availability: "available" as const,
-    image_url: "/placeholder.svg",
-    specifications: {
-      weight: "",
-      power: "",
-      capacity: "",
-      dimensions: "",
-    },
-  });
-
-  const handleAddEquipment = async () => {
-    try {
-      await addEquipment(newEquipment);
-      toast.success("Equipment added successfully");
-      setShowAddForm(false);
-      setNewEquipment({
-        name: "",
-        type: "excavator",
-        description: "",
-        daily_rate: 0,
-        weekly_rate: 0,
-        monthly_rate: 0,
-        availability: "available",
-        image_url: "/placeholder.svg",
-        specifications: {
-          weight: "",
-          power: "",
-          capacity: "",
-          dimensions: "",
-        },
-      });
-    } catch (error) {
-      toast.error("Failed to add equipment");
-    }
-  };
-
-  const handleUpdateEquipmentAvailability = async (
-    id: string,
-    availability: string,
-  ) => {
-    try {
-      await updateEquipment(id, { availability: availability as any });
-      toast.success("Equipment updated successfully");
-    } catch (error) {
-      toast.error("Failed to update equipment");
-    }
-  };
-
-  const handleUpdateBookingStatus = async (id: string, status: string) => {
-    try {
-      await updateBookingStatus(id, status as any);
-      toast.success("Booking status updated");
-    } catch (error) {
-      toast.error("Failed to update booking");
-    }
-  };
+    equipmentLoading,
+    clientsLoading,
+    bookingsLoading,
+  } = useEnhancedSupabase();
+  const { messages } = useMessages();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -132,9 +46,63 @@ export function DatabaseManager() {
     return `$${amount.toLocaleString()}`;
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "active":
+        return <Clock className="w-4 h-4 text-blue-500" />;
+      case "pending":
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case "rejected":
+      case "cancelled":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getAvailabilityColor = (availability: string) => {
+    switch (availability) {
+      case "available":
+        return "bg-green-500";
+      case "rented":
+        return "bg-red-500";
+      case "maintenance":
+        return "bg-yellow-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  // Calculate statistics
+  const totalRevenue = bookings
+    .filter((b) => b.status === "completed")
+    .reduce((sum, booking) => {
+      const equipmentItem = equipment.find(
+        (e) => e.id === booking.equipment_id,
+      );
+      return sum + (equipmentItem?.daily_rate || 0) * booking.duration_days;
+    }, 0);
+
+  const activeBookings = bookings.filter((b) => b.status === "active").length;
+  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const completedBookings = bookings.filter(
+    (b) => b.status === "completed",
+  ).length;
+
+  const availableEquipment = equipment.filter(
+    (e) => e.availability === "available",
+  ).length;
+  const rentedEquipment = equipment.filter(
+    (e) => e.availability === "rented",
+  ).length;
+
+  const onlineClients = clients.filter((c) => c.is_online).length;
+
   return (
     <div className="space-y-6">
-      {/* Database Overview */}
+      {/* Database Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -143,6 +111,9 @@ export function DatabaseManager() {
               <div>
                 <p className="text-sm text-gray-600">Equipment</p>
                 <p className="text-2xl font-bold">{equipment.length}</p>
+                <p className="text-xs text-gray-500">
+                  {availableEquipment} available • {rentedEquipment} rented
+                </p>
               </div>
             </div>
           </CardContent>
@@ -155,6 +126,7 @@ export function DatabaseManager() {
               <div>
                 <p className="text-sm text-gray-600">Clients</p>
                 <p className="text-2xl font-bold">{clients.length}</p>
+                <p className="text-xs text-gray-500">{onlineClients} online</p>
               </div>
             </div>
           </CardContent>
@@ -167,6 +139,9 @@ export function DatabaseManager() {
               <div>
                 <p className="text-sm text-gray-600">Bookings</p>
                 <p className="text-2xl font-bold">{bookings.length}</p>
+                <p className="text-xs text-gray-500">
+                  {activeBookings} active • {pendingBookings} pending
+                </p>
               </div>
             </div>
           </CardContent>
@@ -175,10 +150,15 @@ export function DatabaseManager() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-purple-500" />
+              <DollarSign className="w-5 h-5 text-purple-500" />
               <div>
-                <p className="text-sm text-gray-600">Messages</p>
-                <p className="text-2xl font-bold">{messages.length}</p>
+                <p className="text-sm text-gray-600">Revenue</p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(totalRevenue)}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {completedBookings} completed bookings
+                </p>
               </div>
             </div>
           </CardContent>
@@ -188,207 +168,155 @@ export function DatabaseManager() {
       {/* Database Tables */}
       <Card>
         <CardHeader>
-          <CardTitle>Database Management</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" />
+            Live Database Data
+          </CardTitle>
           <CardDescription>
-            View and manage your equipment, clients, bookings, and messages
+            Real-time view of your equipment rental business data from the
+            comprehensive sample database
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="equipment">Equipment</TabsTrigger>
               <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
             </TabsList>
 
-            {/* Equipment Tab */}
-            <TabsContent value="equipment" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Equipment Management</h3>
-                <Button onClick={() => setShowAddForm(!showAddForm)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Equipment
-                </Button>
-              </div>
-
-              {showAddForm && (
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add New Equipment</CardTitle>
+                    <CardTitle className="text-lg">Equipment Status</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="name">Equipment Name</Label>
-                        <Input
-                          id="name"
-                          value={newEquipment.name}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              name: e.target.value,
-                            })
-                          }
-                          placeholder="e.g., CAT 320 Excavator"
-                        />
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Available:</span>
+                        <Badge className="bg-green-500">
+                          {availableEquipment}
+                        </Badge>
                       </div>
-                      <div>
-                        <Label htmlFor="type">Type</Label>
-                        <Select
-                          value={newEquipment.type}
-                          onValueChange={(value) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              type: value as any,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="excavator">Excavator</SelectItem>
-                            <SelectItem value="crane">Crane</SelectItem>
-                            <SelectItem value="bulldozer">Bulldozer</SelectItem>
-                            <SelectItem value="loader">Loader</SelectItem>
-                            <SelectItem value="forklift">Forklift</SelectItem>
-                            <SelectItem value="compactor">Compactor</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex justify-between">
+                        <span>Rented:</span>
+                        <Badge className="bg-red-500">{rentedEquipment}</Badge>
                       </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={newEquipment.description}
-                        onChange={(e) =>
-                          setNewEquipment({
-                            ...newEquipment,
-                            description: e.target.value,
-                          })
-                        }
-                        placeholder="Equipment description..."
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="daily_rate">Daily Rate ($)</Label>
-                        <Input
-                          id="daily_rate"
-                          type="number"
-                          value={newEquipment.daily_rate}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              daily_rate: Number(e.target.value),
-                            })
+                      <div className="flex justify-between">
+                        <span>Maintenance:</span>
+                        <Badge className="bg-yellow-500">
+                          {
+                            equipment.filter(
+                              (e) => e.availability === "maintenance",
+                            ).length
                           }
-                        />
+                        </Badge>
                       </div>
-                      <div>
-                        <Label htmlFor="weekly_rate">Weekly Rate ($)</Label>
-                        <Input
-                          id="weekly_rate"
-                          type="number"
-                          value={newEquipment.weekly_rate}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              weekly_rate: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="monthly_rate">Monthly Rate ($)</Label>
-                        <Input
-                          id="monthly_rate"
-                          type="number"
-                          value={newEquipment.monthly_rate}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              monthly_rate: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="weight">Weight</Label>
-                        <Input
-                          id="weight"
-                          value={newEquipment.specifications.weight}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              specifications: {
-                                ...newEquipment.specifications,
-                                weight: e.target.value,
-                              },
-                            })
-                          }
-                          placeholder="e.g., 20,000 kg"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="power">Power</Label>
-                        <Input
-                          id="power"
-                          value={newEquipment.specifications.power}
-                          onChange={(e) =>
-                            setNewEquipment({
-                              ...newEquipment,
-                              specifications: {
-                                ...newEquipment.specifications,
-                                power: e.target.value,
-                              },
-                            })
-                          }
-                          placeholder="e.g., 121 kW"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-4">
-                      <Button onClick={handleAddEquipment} className="flex-1">
-                        Add Equipment
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowAddForm(false)}
-                      >
-                        Cancel
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              )}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Booking Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Active:</span>
+                        <Badge className="bg-blue-500">{activeBookings}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Pending:</span>
+                        <Badge className="bg-yellow-500">
+                          {pendingBookings}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Completed:</span>
+                        <Badge className="bg-green-500">
+                          {completedBookings}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Utilization:</span>
+                        <Badge>
+                          {equipment.length > 0
+                            ? Math.round(
+                                (rentedEquipment / equipment.length) * 100,
+                              )
+                            : 0}
+                          %
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Avg Booking:</span>
+                        <Badge>
+                          {formatCurrency(
+                            bookings.length > 0
+                              ? totalRevenue / completedBookings || 0
+                              : 0,
+                          )}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Messages:</span>
+                        <Badge className="bg-purple-500">
+                          {messages.length}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Equipment Tab */}
+            <TabsContent value="equipment" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  Equipment Database ({equipment.length} items)
+                </h3>
+                <div className="flex gap-2">
+                  <Badge variant="outline">
+                    {availableEquipment} Available
+                  </Badge>
+                  <Badge variant="outline">{rentedEquipment} Rented</Badge>
+                </div>
+              </div>
 
               <ScrollArea className="h-96">
                 <div className="space-y-4">
-                  {equipmentLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    </div>
-                  ) : equipment.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      No equipment found
-                    </p>
-                  ) : (
-                    equipment.map((item) => (
-                      <Card key={item.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
+                  {equipment.map((item) => (
+                    <Card key={item.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex gap-4">
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
                             <div className="flex-1">
                               <h4 className="font-semibold">{item.name}</h4>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-gray-600 capitalize">
+                                {item.type}
+                              </p>
+                              <p className="text-xs text-gray-500">
                                 {item.description}
                               </p>
                               <div className="flex space-x-4 mt-2 text-sm">
@@ -402,79 +330,82 @@ export function DatabaseManager() {
                                   Monthly: {formatCurrency(item.monthly_rate)}
                                 </span>
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Select
-                                value={item.availability}
-                                onValueChange={(value) =>
-                                  handleUpdateEquipmentAvailability(
-                                    item.id,
-                                    value,
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="available">
-                                    Available
-                                  </SelectItem>
-                                  <SelectItem value="rented">Rented</SelectItem>
-                                  <SelectItem value="maintenance">
-                                    Maintenance
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Badge
-                                variant={
-                                  item.availability === "available"
-                                    ? "default"
-                                    : "secondary"
-                                }
-                                className={cn(
-                                  item.availability === "available" &&
-                                    "bg-green-500",
-                                  item.availability === "rented" &&
-                                    "bg-red-500",
-                                  item.availability === "maintenance" &&
-                                    "bg-yellow-500",
-                                )}
-                              >
-                                {item.availability}
-                              </Badge>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">
+                                  Popularity:
+                                </span>
+                                <div className="flex">
+                                  {[...Array(5)].map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className={`text-xs ${i < Math.floor(item.popularity_score / 20) ? "text-yellow-500" : "text-gray-300"}`}
+                                    >
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  ({item.popularity_score}/100)
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                          <div className="text-right">
+                            <Badge
+                              className={cn(
+                                "text-white",
+                                getAvailabilityColor(item.availability),
+                              )}
+                            >
+                              {item.availability}
+                            </Badge>
+                            {item.available_date && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Available: {formatDate(item.available_date)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </ScrollArea>
             </TabsContent>
 
             {/* Clients Tab */}
             <TabsContent value="clients" className="space-y-4">
-              <h3 className="text-lg font-semibold">Client Management</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  Client Database ({clients.length} clients)
+                </h3>
+                <div className="flex gap-2">
+                  <Badge variant="outline">{onlineClients} Online</Badge>
+                  <Badge variant="outline">
+                    {clients.length - onlineClients} Offline
+                  </Badge>
+                </div>
+              </div>
+
               <ScrollArea className="h-96">
                 <div className="space-y-4">
-                  {clientsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    </div>
-                  ) : clients.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      No clients found
-                    </p>
-                  ) : (
-                    clients.map((client) => (
-                      <Card key={client.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
+                  {clients.map((client) => (
+                    <Card key={client.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex gap-4">
+                            <img
+                              src={client.avatar_url}
+                              alt={client.name}
+                              className="w-12 h-12 object-cover rounded-full"
+                            />
                             <div>
                               <h4 className="font-semibold">{client.name}</h4>
                               <p className="text-sm text-gray-600">
                                 {client.company}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {client.profession}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {client.email}
@@ -482,55 +413,89 @@ export function DatabaseManager() {
                               <p className="text-sm text-gray-500">
                                 {client.phone}
                               </p>
-                            </div>
-                            <div className="text-right">
-                              <Badge
-                                variant={
-                                  client.is_online ? "default" : "secondary"
-                                }
-                              >
-                                {client.is_online ? "Online" : "Offline"}
-                              </Badge>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Registered:{" "}
-                                {formatDate(client.registration_date)}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">
+                                  Reliability:
+                                </span>
+                                <div className="flex">
+                                  {[...Array(10)].map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className={`text-xs ${i < client.reliability_score ? "text-green-500" : "text-gray-300"}`}
+                                    >
+                                      ●
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  ({client.reliability_score}/10)
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                          <div className="text-right">
+                            <Badge
+                              variant={
+                                client.is_online ? "default" : "secondary"
+                              }
+                            >
+                              {client.is_online ? "Online" : "Offline"}
+                            </Badge>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {client.total_bookings} bookings
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(client.total_spent)} spent
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Registered: {formatDate(client.registration_date)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </ScrollArea>
             </TabsContent>
 
             {/* Bookings Tab */}
             <TabsContent value="bookings" className="space-y-4">
-              <h3 className="text-lg font-semibold">Booking Management</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  Booking Database ({bookings.length} bookings)
+                </h3>
+                <div className="flex gap-2">
+                  <Badge variant="outline">{activeBookings} Active</Badge>
+                  <Badge variant="outline">{pendingBookings} Pending</Badge>
+                  <Badge variant="outline">{completedBookings} Completed</Badge>
+                </div>
+              </div>
+
               <ScrollArea className="h-96">
                 <div className="space-y-4">
-                  {bookingsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    </div>
-                  ) : bookings.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      No bookings found
-                    </p>
-                  ) : (
-                    bookings.map((booking) => {
-                      const equipmentItem = equipment.find(
-                        (e) => e.id === booking.equipment_id,
-                      );
-                      const client = clients.find(
-                        (c) => c.id === booking.client_id,
-                      );
+                  {bookings.map((booking) => {
+                    const equipmentItem = equipment.find(
+                      (e) => e.id === booking.equipment_id,
+                    );
+                    const client = clients.find(
+                      (c) => c.id === booking.client_id,
+                    );
+                    const revenue =
+                      (equipmentItem?.daily_rate || 0) * booking.duration_days;
 
-                      return (
-                        <Card key={booking.id}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
+                    return (
+                      <Card key={booking.id}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex gap-4">
+                              {equipmentItem && (
+                                <img
+                                  src={equipmentItem.image_url}
+                                  alt={equipmentItem.name}
+                                  className="w-12 h-12 object-cover rounded-lg"
+                                />
+                              )}
                               <div>
                                 <h4 className="font-semibold">
                                   {equipmentItem?.name || "Unknown Equipment"}
@@ -539,138 +504,135 @@ export function DatabaseManager() {
                                   Client: {client?.name || "Unknown Client"}
                                 </p>
                                 <p className="text-sm text-gray-500">
+                                  Company: {client?.company}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Duration: {booking.duration_days} days
+                                </p>
+                                <p className="text-sm text-gray-500">
                                   {formatDate(booking.start_date)} -{" "}
                                   {formatDate(booking.end_date)}
                                 </p>
-                                <p className="text-sm font-medium">
-                                  Total: {formatCurrency(booking.total_amount)}
+                                <p className="text-sm text-gray-500">
+                                  Destination: {booking.destination}
                                 </p>
-                                {booking.notes && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Notes: {booking.notes}
+                                {booking.gratitude_message && (
+                                  <p className="text-xs text-gray-400 italic mt-1">
+                                    "{booking.gratitude_message}"
                                   </p>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <Select
-                                  value={booking.status}
-                                  onValueChange={(value) =>
-                                    handleUpdateBookingStatus(booking.id, value)
-                                  }
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">
-                                      Pending
-                                    </SelectItem>
-                                    <SelectItem value="confirmed">
-                                      Confirmed
-                                    </SelectItem>
-                                    <SelectItem value="active">
-                                      Active
-                                    </SelectItem>
-                                    <SelectItem value="completed">
-                                      Completed
-                                    </SelectItem>
-                                    <SelectItem value="cancelled">
-                                      Cancelled
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Badge
-                                  variant={
-                                    booking.status === "completed"
-                                      ? "default"
-                                      : "secondary"
-                                  }
-                                  className={cn(
-                                    booking.status === "pending" &&
-                                      "bg-yellow-500",
-                                    booking.status === "confirmed" &&
-                                      "bg-blue-500",
-                                    booking.status === "active" &&
-                                      "bg-green-500",
-                                    booking.status === "completed" &&
-                                      "bg-gray-500",
-                                    booking.status === "cancelled" &&
-                                      "bg-red-500",
-                                  )}
-                                >
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 mb-2">
+                                {getStatusIcon(booking.status)}
+                                <Badge variant="outline">
                                   {booking.status}
                                 </Badge>
                               </div>
+                              <p className="text-sm font-medium">
+                                Revenue: {formatCurrency(revenue)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Payment: {booking.payment_method}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Status: {booking.payment_status}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Created: {formatDate(booking.created_at)}
+                              </p>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })
-                  )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </TabsContent>
 
             {/* Messages Tab */}
             <TabsContent value="messages" className="space-y-4">
-              <h3 className="text-lg font-semibold">Message History</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  Message Database ({messages.length} messages)
+                </h3>
+                <Badge variant="outline">
+                  {messages.filter((m) => !m.is_read).length} Unread
+                </Badge>
+              </div>
+
               <ScrollArea className="h-96">
                 <div className="space-y-4">
-                  {messagesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      No messages found
-                    </p>
-                  ) : (
-                    messages.map((message) => {
-                      const client = clients.find(
-                        (c) =>
-                          c.id === message.sender_id ||
-                          c.id === message.receiver_id,
-                      );
+                  {messages.map((message) => {
+                    const client = clients.find(
+                      (c) =>
+                        c.id === message.sender_id ||
+                        c.id === message.receiver_id,
+                    );
+                    const isFromAdmin = message.sender_id === "admin";
 
-                      return (
-                        <Card key={message.id}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
+                    return (
+                      <Card key={message.id}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex gap-4 flex-1">
+                              {client && (
+                                <img
+                                  src={client.avatar_url}
+                                  alt={client.name}
+                                  className="w-10 h-10 object-cover rounded-full"
+                                />
+                              )}
                               <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="flex items-center gap-2 mb-2">
                                   <Badge
                                     variant={
-                                      message.sender_id === "manager"
-                                        ? "default"
-                                        : "secondary"
+                                      isFromAdmin ? "default" : "secondary"
                                     }
                                   >
-                                    {message.sender_id === "manager"
-                                      ? "Manager"
-                                      : "Client"}
+                                    {isFromAdmin ? "Admin" : "Client"}
                                   </Badge>
-                                  <span className="text-sm text-gray-500">
-                                    {client?.name || "Unknown User"}
+                                  <span className="text-sm font-medium">
+                                    {isFromAdmin
+                                      ? "You"
+                                      : client?.name || "Unknown User"}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(
+                                      message.timestamp,
+                                    ).toLocaleString()}
                                   </span>
                                 </div>
                                 <p className="text-sm">{message.content}</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {new Date(message.timestamp).toLocaleString()}
-                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {message.type}
+                                  </Badge>
+                                  {message.is_pinned && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-yellow-50"
+                                    >
+                                      Pinned
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                              <Badge
-                                variant={
-                                  message.is_read ? "default" : "destructive"
-                                }
-                              >
-                                {message.is_read ? "Read" : "Unread"}
-                              </Badge>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })
-                  )}
+                            <Badge
+                              variant={
+                                message.is_read ? "default" : "destructive"
+                              }
+                            >
+                              {message.is_read ? "Read" : "Unread"}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </TabsContent>

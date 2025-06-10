@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -5,6 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,8 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ChartContainer,
   ChartTooltip,
@@ -37,244 +38,299 @@ import {
   TrendingUp,
   Filter,
 } from "lucide-react";
-import { useDashboardStats, useBookings } from "@/hooks/useSupabase";
-import { useState, useMemo } from "react";
-
-const revenueData = [
-  { month: "Jan", revenue: 45000, bookings: 12 },
-  { month: "Feb", revenue: 52000, bookings: 15 },
-  { month: "Mar", revenue: 48000, bookings: 13 },
-  { month: "Apr", revenue: 61000, bookings: 18 },
-  { month: "May", revenue: 55000, bookings: 16 },
-  { month: "Jun", revenue: 67000, bookings: 20 },
-];
+import { useEnhancedSupabase } from "@/hooks/useEnhancedSupabase";
 
 const revenueChartConfig = {
   revenue: {
     label: "Revenue",
-    color: "#f97316",
+    color: "hsl(var(--chart-1))",
   },
 };
 
-const equipmentUsage = [
-  { name: "Excavators", value: 35, fill: "#f97316" },
-  { name: "Cranes", value: 25, fill: "#3b82f6" },
-  { name: "Bulldozers", value: 20, fill: "#10b981" },
-  { name: "Loaders", value: 20, fill: "#8b5cf6" },
-];
-
 const equipmentChartConfig = {
-  excavators: {
-    label: "Excavators",
-    color: "#f97316",
-  },
-  cranes: {
-    label: "Cranes",
-    color: "#3b82f6",
-  },
-  bulldozers: {
-    label: "Bulldozers",
-    color: "#10b981",
-  },
-  loaders: {
-    label: "Loaders",
-    color: "#8b5cf6",
-  },
+  excavator: { label: "Excavator", color: "#8884d8" },
+  crane: { label: "Crane", color: "#82ca9d" },
+  loader: { label: "Loader", color: "#ffc658" },
+  forklift: { label: "Forklift", color: "#ff7300" },
+  compactor: { label: "Compactor", color: "#00ff7f" },
+  generator: { label: "Generator", color: "#dc143c" },
 };
 
 export function Analytics() {
-  const [timeFilter, setTimeFilter] = useState("month");
-  const [equipmentFilter, setEquipmentFilter] = useState("all");
+  const [dateRange, setDateRange] = useState("month");
+  const { equipment, clients, bookings, stats } = useEnhancedSupabase();
 
-  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats();
-  const { bookings, loading: bookingsLoading } = useBookings();
-
-  // Generate revenue data from real bookings
+  // Calculate real revenue from sample data
   const revenueData = useMemo(() => {
-    if (!bookings.length) return [];
+    const monthlyRevenue = new Map();
 
-    const monthlyData = bookings
-      .filter((booking) => booking.status === "completed")
-      .reduce(
-        (acc, booking) => {
-          const date = new Date(booking.created_at);
-          const monthKey = date.toLocaleDateString("en-US", { month: "short" });
+    bookings.forEach((booking) => {
+      if (booking.status === "completed") {
+        const date = new Date(booking.created_at);
+        const monthKey = date.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+        const equipmentItem = equipment.find(
+          (e) => e.id === booking.equipment_id,
+        );
+        const revenue =
+          (equipmentItem?.daily_rate || 0) * booking.duration_days;
 
-          if (!acc[monthKey]) {
-            acc[monthKey] = { month: monthKey, revenue: 0, bookings: 0 };
-          }
+        monthlyRevenue.set(
+          monthKey,
+          (monthlyRevenue.get(monthKey) || 0) + revenue,
+        );
+      }
+    });
 
-          acc[monthKey].revenue += booking.total_amount;
-          acc[monthKey].bookings += 1;
+    // Get last 6 months
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      });
+      months.push({
+        month: monthKey,
+        revenue: monthlyRevenue.get(monthKey) || 0,
+      });
+    }
 
-          return acc;
-        },
-        {} as Record<
-          string,
-          { month: string; revenue: number; bookings: number }
-        >,
+    return months;
+  }, [bookings, equipment]);
+
+  // Calculate equipment usage
+  const equipmentUsage = useMemo(() => {
+    const usage = new Map();
+
+    bookings.forEach((booking) => {
+      const equipmentItem = equipment.find(
+        (e) => e.id === booking.equipment_id,
       );
+      if (equipmentItem) {
+        const type = equipmentItem.type;
+        usage.set(type, (usage.get(type) || 0) + 1);
+      }
+    });
 
-    return Object.values(monthlyData).slice(-6); // Last 6 months
-  }, [bookings]);
-
-  const stats = [
-    {
-      title: "Total Revenue",
-      value: `$${dashboardStats.totalRevenue.toLocaleString()}`,
-      change: `+${dashboardStats.monthlyGrowth}%`,
-      changeType: "positive" as const,
-      icon: DollarSign,
-    },
-    {
-      title: "Active Bookings",
-      value: dashboardStats.activeBookings.toString(),
-      change: "+12%",
-      changeType: "positive" as const,
-      icon: Calendar,
-    },
-    {
-      title: "Equipment Fleet",
-      value: dashboardStats.totalEquipment.toString(),
-      change: "+2",
-      changeType: "positive" as const,
-      icon: Truck,
-    },
-    {
-      title: "Total Clients",
-      value: dashboardStats.clientCount.toString(),
-      change: "+8%",
-      changeType: "positive" as const,
-      icon: Users,
-    },
-  ];
-
-  if (statsLoading || bookingsLoading) {
-    return (
-      <div className="space-y-8 animate-pulse">
-        <div className="h-32 bg-gray-200 rounded-lg"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
-          ))}
-        </div>
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="h-80 bg-gray-200 rounded-lg"></div>
-          <div className="h-80 bg-gray-200 rounded-lg"></div>
-        </div>
-      </div>
+    const total = Array.from(usage.values()).reduce(
+      (sum, count) => sum + count,
+      0,
     );
-  }
+
+    return Array.from(usage.entries()).map(([type, count]) => ({
+      name: type.charAt(0).toUpperCase() + type.slice(1),
+      value: total > 0 ? Math.round((count / total) * 100) : 0,
+      fill:
+        equipmentChartConfig[type as keyof typeof equipmentChartConfig]
+          ?.color || "#8884d8",
+    }));
+  }, [bookings, equipment]);
+
+  // Calculate key metrics
+  const totalRevenue = useMemo(() => {
+    return bookings
+      .filter((b) => b.status === "completed")
+      .reduce((sum, booking) => {
+        const equipmentItem = equipment.find(
+          (e) => e.id === booking.equipment_id,
+        );
+        return sum + (equipmentItem?.daily_rate || 0) * booking.duration_days;
+      }, 0);
+  }, [bookings, equipment]);
+
+  const totalBookings = bookings.length;
+  const activeBookings = bookings.filter((b) => b.status === "active").length;
+  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const completedBookings = bookings.filter(
+    (b) => b.status === "completed",
+  ).length;
+
+  const utilizationRate =
+    equipment.length > 0
+      ? Math.round(
+          (equipment.filter((e) => e.availability === "rented").length /
+            equipment.length) *
+            100,
+        )
+      : 0;
+
+  const avgBookingValue =
+    completedBookings > 0 ? totalRevenue / completedBookings : 0;
+
+  // Calculate monthly growth
+  const currentMonthRevenue = revenueData[revenueData.length - 1]?.revenue || 0;
+  const lastMonthRevenue = revenueData[revenueData.length - 2]?.revenue || 0;
+  const monthlyGrowth =
+    lastMonthRevenue > 0
+      ? Math.round(
+          ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100,
+        )
+      : 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="w-5 h-5" />
-                <span>Analytics Filters</span>
-              </CardTitle>
-              <CardDescription>Filter your dashboard data</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium">Time Range:</label>
-              <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="year">This Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Business Analytics</h2>
+          <p className="text-gray-600">
+            Real-time insights from your equipment rental data
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Last 7 days</SelectItem>
+              <SelectItem value="month">Last 30 days</SelectItem>
+              <SelectItem value="quarter">Last 3 months</SelectItem>
+              <SelectItem value="year">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm">
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+          </Button>
+        </div>
+      </div>
 
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium">Equipment:</label>
-              <Select
-                value={equipmentFilter}
-                onValueChange={setEquipmentFilter}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="excavator">Excavators</SelectItem>
-                  <SelectItem value="crane">Cranes</SelectItem>
-                  <SelectItem value="bulldozer">Bulldozers</SelectItem>
-                  <SelectItem value="loader">Loaders</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button variant="outline" size="sm">
-              Export Report
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Cards */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      {stat.title}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className="bg-orange-100 p-3 rounded-full">
-                    <Icon className="w-6 h-6 text-orange-600" />
-                  </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Revenue
+                </p>
+                <p className="text-2xl font-bold">
+                  ${totalRevenue.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {completedBookings} completed bookings
+                </p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-green-600" />
+              </div>
+            </div>
+            <div className="flex items-center mt-4">
+              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+              <span className="text-sm text-green-600 font-medium">
+                {monthlyGrowth >= 0 ? "+" : ""}
+                {monthlyGrowth}%
+              </span>
+              <span className="text-sm text-gray-500 ml-1">vs last month</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Bookings
+                </p>
+                <p className="text-2xl font-bold">{totalBookings}</p>
+                <p className="text-xs text-gray-500">
+                  {activeBookings} active • {pendingBookings} pending
+                </p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-blue-600" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex space-x-2">
+                <Badge variant="outline" className="text-xs">
+                  {Math.round((completedBookings / totalBookings) * 100)}%
+                  completion rate
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Equipment Fleet
+                </p>
+                <p className="text-2xl font-bold">{equipment.length}</p>
+                <p className="text-xs text-gray-500">
+                  {
+                    equipment.filter((e) => e.availability === "available")
+                      .length
+                  }{" "}
+                  available
+                </p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
+                <Truck className="h-4 w-4 text-orange-600" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-center">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full"
+                    style={{ width: `${utilizationRate}%` }}
+                  ></div>
                 </div>
-                <div className="mt-4 flex items-center">
-                  <Badge
-                    variant={
-                      stat.changeType === "positive" ? "default" : "destructive"
-                    }
-                    className={
-                      stat.changeType === "positive"
-                        ? "bg-green-100 text-green-800"
-                        : ""
-                    }
-                  >
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    {stat.change}
-                  </Badge>
-                  <span className="text-sm text-gray-500 ml-2">
-                    vs last period
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <span className="text-sm font-medium ml-2">
+                  {utilizationRate}%
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Utilization rate</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Clients
+                </p>
+                <p className="text-2xl font-bold">{clients.length}</p>
+                <p className="text-xs text-gray-500">
+                  {clients.filter((c) => c.is_online).length} online now
+                </p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                <Users className="h-4 w-4 text-purple-600" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex space-x-2">
+                <Badge variant="outline" className="text-xs">
+                  Avg: ${Math.round(avgBookingValue)} per booking
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Revenue & Bookings Trend</CardTitle>
-            <CardDescription>Monthly performance overview</CardDescription>
+            <CardTitle>Revenue Trends</CardTitle>
+            <CardDescription>
+              Monthly revenue over the last 6 months
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={revenueChartConfig} className="h-[300px]">
@@ -347,32 +403,70 @@ export function Analytics() {
         </Card>
       </div>
 
-      {/* Utilization Rate */}
+      {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <CardTitle>Equipment Utilization Rate</CardTitle>
+          <CardTitle>Recent Booking Activity</CardTitle>
           <CardDescription>
-            How efficiently your equipment is being used
+            Latest equipment bookings and status updates
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Overall Utilization</span>
-              <span className="text-2xl font-bold text-orange-600">
-                {dashboardStats.utilizationRate}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-orange-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${dashboardStats.utilizationRate}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600">
-              Your equipment is being utilized efficiently. Aim for 80%+ for
-              optimal profitability.
-            </p>
+            {bookings.slice(0, 5).map((booking) => {
+              const equipmentItem = equipment.find(
+                (e) => e.id === booking.equipment_id,
+              );
+              const client = clients.find((c) => c.id === booking.client_id);
+              const revenue =
+                (equipmentItem?.daily_rate || 0) * booking.duration_days;
+
+              return (
+                <div
+                  key={booking.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={equipmentItem?.image_url || "/placeholder.svg"}
+                      alt={equipmentItem?.name}
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <div>
+                      <p className="font-medium">{equipmentItem?.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {client?.name} • {client?.company}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(booking.start_date).toLocaleDateString()} -{" "}
+                        {booking.duration_days} days
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge
+                      variant={
+                        booking.status === "completed" ? "default" : "secondary"
+                      }
+                      className={
+                        booking.status === "active"
+                          ? "bg-blue-500"
+                          : booking.status === "pending"
+                            ? "bg-yellow-500"
+                            : booking.status === "completed"
+                              ? "bg-green-500"
+                              : "bg-gray-500"
+                      }
+                    >
+                      {booking.status}
+                    </Badge>
+                    <p className="text-sm font-medium mt-1">
+                      ${revenue.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
