@@ -39,6 +39,7 @@ import {
   Filter,
 } from "lucide-react";
 import { useEnhancedSupabase } from "@/hooks/useEnhancedSupabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const revenueChartConfig = {
   revenue: {
@@ -59,6 +60,7 @@ const equipmentChartConfig = {
 export function Analytics() {
   const [dateRange, setDateRange] = useState("month");
   const { equipment, clients, bookings, stats } = useEnhancedSupabase();
+  const { t } = useLanguage();
 
   // Calculate real revenue from sample data
   const revenueData = useMemo(() => {
@@ -176,9 +178,11 @@ export function Analytics() {
       {/* Filters */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Business Analytics</h2>
-          <p className="text-gray-600">
-            Real-time insights from your equipment rental data
+          <h2 className="text-2xl font-bold dark:text-white">
+            {t("dashboard.title")}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">
+            {t("dashboard.subtitle")}
           </p>
         </div>
         <div className="flex items-center space-x-4">
