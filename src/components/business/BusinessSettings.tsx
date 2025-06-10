@@ -37,10 +37,15 @@ import {
   Building,
 } from "lucide-react";
 import { useBusinessSettings } from "@/hooks/useEnhancedSupabase";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 export function BusinessSettings() {
   const { settings, loading, updateSettings } = useBusinessSettings();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
+
   const [localSettings, setLocalSettings] = useState({
     business_name: "",
     business_email: "",
@@ -87,14 +92,14 @@ export function BusinessSettings() {
   const handleSaveSettings = async () => {
     try {
       await updateSettings(localSettings);
-      toast.success("Settings saved successfully");
 
       // Apply theme change
-      if (localSettings.theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      setTheme(localSettings.theme);
+
+      // Apply language change
+      setLanguage(localSettings.language);
+
+      toast.success(t("settings.save_settings") + " ✓");
     } catch (error) {
       toast.error("Failed to save settings");
     }
@@ -113,6 +118,11 @@ export function BusinessSettings() {
     { code: "GBP", name: "British Pound", symbol: "£" },
     { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
     { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+    { code: "XAF", name: "Central African CFA Franc (FCFA)", symbol: "FCFA" }, // Added Cameroon currency
+    { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+    { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
+    { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
+    { code: "INR", name: "Indian Rupee", symbol: "₹" },
   ];
 
   const timezones = [
@@ -122,8 +132,12 @@ export function BusinessSettings() {
     "America/Chicago",
     "Europe/London",
     "Europe/Paris",
+    "Africa/Douala", // Added Cameroon timezone
     "Asia/Tokyo",
     "Australia/Sydney",
+    "Africa/Lagos",
+    "Europe/Berlin",
+    "Asia/Shanghai",
   ];
 
   const weekDays = [
@@ -147,13 +161,37 @@ export function BusinessSettings() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {t("nav.settings")}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Manage your business settings and preferences
+          </p>
+        </div>
+        <Button
+          onClick={handleSaveSettings}
+          className="bg-orange-500 hover:bg-orange-600"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {t("settings.save_settings")}
+        </Button>
+      </div>
+
       <Tabs defaultValue="business" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="business">Business</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="localization">Localization</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="hours">Working Hours</TabsTrigger>
+          <TabsTrigger value="business">{t("settings.business")}</TabsTrigger>
+          <TabsTrigger value="appearance">
+            {t("settings.appearance")}
+          </TabsTrigger>
+          <TabsTrigger value="localization">
+            {t("settings.localization")}
+          </TabsTrigger>
+          <TabsTrigger value="notifications">
+            {t("settings.notifications")}
+          </TabsTrigger>
+          <TabsTrigger value="hours">{t("settings.working_hours")}</TabsTrigger>
         </TabsList>
 
         {/* Business Information */}
@@ -162,7 +200,7 @@ export function BusinessSettings() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Building className="w-5 h-5" />
-                <span>Business Information</span>
+                <span>{t("settings.business_info")}</span>
               </CardTitle>
               <CardDescription>
                 Update your business details that appear throughout the
@@ -172,7 +210,9 @@ export function BusinessSettings() {
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="business_name">Business Name</Label>
+                  <Label htmlFor="business_name">
+                    {t("settings.business_name")}
+                  </Label>
                   <Input
                     id="business_name"
                     value={localSettings.business_name}
@@ -187,7 +227,9 @@ export function BusinessSettings() {
                 </div>
 
                 <div>
-                  <Label htmlFor="business_email">Business Email</Label>
+                  <Label htmlFor="business_email">
+                    {t("settings.business_email")}
+                  </Label>
                   <Input
                     id="business_email"
                     type="email"
@@ -203,7 +245,9 @@ export function BusinessSettings() {
                 </div>
 
                 <div>
-                  <Label htmlFor="business_phone">Business Phone</Label>
+                  <Label htmlFor="business_phone">
+                    {t("settings.business_phone")}
+                  </Label>
                   <Input
                     id="business_phone"
                     value={localSettings.business_phone}
@@ -213,12 +257,12 @@ export function BusinessSettings() {
                         business_phone: e.target.value,
                       })
                     }
-                    placeholder="+1-555-EQUIP"
+                    placeholder="+237-XXX-XXX-XXX"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label htmlFor="currency">{t("settings.currency")}</Label>
                   <Select
                     value={localSettings.currency}
                     onValueChange={(value) =>
@@ -231,7 +275,15 @@ export function BusinessSettings() {
                     <SelectContent>
                       {currencies.map((currency) => (
                         <SelectItem key={currency.code} value={currency.code}>
-                          {currency.symbol} {currency.name}
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono">{currency.symbol}</span>
+                            <span>{currency.name}</span>
+                            {currency.code === "XAF" && (
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                🇨🇲 Cameroon
+                              </span>
+                            )}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -240,7 +292,9 @@ export function BusinessSettings() {
               </div>
 
               <div>
-                <Label htmlFor="business_address">Business Address</Label>
+                <Label htmlFor="business_address">
+                  {t("settings.business_address")}
+                </Label>
                 <Textarea
                   id="business_address"
                   value={localSettings.business_address}
@@ -250,7 +304,7 @@ export function BusinessSettings() {
                       business_address: e.target.value,
                     })
                   }
-                  placeholder="123 Industrial Ave, City, State 12345"
+                  placeholder="123 Industrial Ave, Douala, Cameroon"
                   rows={3}
                 />
               </div>
@@ -264,7 +318,7 @@ export function BusinessSettings() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Palette className="w-5 h-5" />
-                <span>Appearance</span>
+                <span>{t("settings.appearance")}</span>
               </CardTitle>
               <CardDescription>
                 Customize the look and feel of your application
@@ -272,24 +326,25 @@ export function BusinessSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label>Theme Mode</Label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
+                <Label>{t("settings.theme_mode")}</Label>
+                <div className="grid grid-cols-2 gap-4 mt-2">
                   <div
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       localSettings.theme === "light"
-                        ? "border-orange-500 bg-orange-50"
-                        : "border-gray-200"
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                        : "border-gray-200 dark:border-gray-700"
                     }`}
-                    onClick={() =>
-                      setLocalSettings({ ...localSettings, theme: "light" })
-                    }
+                    onClick={() => {
+                      setLocalSettings({ ...localSettings, theme: "light" });
+                      setTheme("light");
+                    }}
                   >
                     <div className="flex items-center justify-center mb-2">
                       <Sun className="w-8 h-8 text-yellow-500" />
                     </div>
                     <div className="text-center">
-                      <div className="font-medium">Light</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-medium">{t("settings.light")}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         Clean and bright interface
                       </div>
                     </div>
@@ -298,161 +353,143 @@ export function BusinessSettings() {
                   <div
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       localSettings.theme === "dark"
-                        ? "border-orange-500 bg-orange-50"
-                        : "border-gray-200"
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                        : "border-gray-200 dark:border-gray-700"
                     }`}
-                    onClick={() =>
-                      setLocalSettings({ ...localSettings, theme: "dark" })
-                    }
+                    onClick={() => {
+                      setLocalSettings({ ...localSettings, theme: "dark" });
+                      setTheme("dark");
+                    }}
                   >
                     <div className="flex items-center justify-center mb-2">
                       <Moon className="w-8 h-8 text-blue-500" />
                     </div>
                     <div className="text-center">
-                      <div className="font-medium">Dark</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-medium">{t("settings.dark")}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         Easy on the eyes
                       </div>
                     </div>
                   </div>
-
-                  <div className="p-4 border rounded-lg opacity-50 cursor-not-allowed">
-                    <div className="flex items-center justify-center mb-2">
-                      <Monitor className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium">System</div>
-                      <div className="text-sm text-gray-600">Coming soon</div>
-                    </div>
-                  </div>
                 </div>
-              </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">
-                  Theme Preview
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white p-3 rounded border">
-                    <div className="w-full h-2 bg-orange-500 rounded mb-2"></div>
-                    <div className="space-y-1">
-                      <div className="w-3/4 h-2 bg-gray-200 rounded"></div>
-                      <div className="w-1/2 h-2 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-800 p-3 rounded text-white">
-                    <div className="w-full h-2 bg-orange-500 rounded mb-2"></div>
-                    <div className="space-y-1">
-                      <div className="w-3/4 h-2 bg-gray-600 rounded"></div>
-                      <div className="w-1/2 h-2 bg-gray-600 rounded"></div>
-                    </div>
-                  </div>
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Theme Status:</strong> Currently using{" "}
+                    <span className="font-semibold">{theme}</span> mode.{" "}
+                    {theme === "dark" ? "🌙" : "☀️"}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Localization */}
+        {/* Localization Settings */}
         <TabsContent value="localization">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Globe className="w-5 h-5" />
-                <span>Localization</span>
+                <span>{t("settings.localization")}</span>
               </CardTitle>
               <CardDescription>
-                Set your language, timezone, and regional preferences
+                Configure language and regional settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <Label>Language</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                  {languages.map((language) => (
-                    <div
-                      key={language.code}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                        localSettings.language === language.code
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      onClick={() =>
-                        setLocalSettings({
-                          ...localSettings,
-                          language: language.code as any,
-                        })
-                      }
-                    >
-                      <div className="text-center">
-                        <div className="text-2xl mb-2">{language.flag}</div>
-                        <div className="font-medium">{language.name}</div>
-                        <div className="text-sm text-gray-600">
-                          {language.code.toUpperCase()}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label>{t("settings.language")}</Label>
+                  <Select
+                    value={localSettings.language}
+                    onValueChange={(value) => {
+                      setLocalSettings({
+                        ...localSettings,
+                        language: value as any,
+                      });
+                      setLanguage(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languages.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          <div className="flex items-center gap-2">
+                            <span>{lang.flag}</span>
+                            <span>{lang.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{t("settings.timezone")}</Label>
+                  <Select
+                    value={localSettings.timezone}
+                    onValueChange={(value) =>
+                      setLocalSettings({ ...localSettings, timezone: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                          {tz === "Africa/Douala" && (
+                            <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              🇨🇲 Cameroon
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select
-                  value={localSettings.timezone}
-                  onValueChange={(value) =>
-                    setLocalSettings({ ...localSettings, timezone: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timezones.map((timezone) => (
-                      <SelectItem key={timezone} value={timezone}>
-                        {timezone}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-yellow-800 mb-2">
-                  🚧 Coming Soon
-                </h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Date format preferences</li>
-                  <li>• Number format localization</li>
-                  <li>• Full UI translation</li>
-                  <li>• Right-to-left language support</li>
-                </ul>
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  <strong>Language Status:</strong> Currently using{" "}
+                  <span className="font-semibold">
+                    {languages.find((l) => l.code === language)?.name ||
+                      "English"}
+                  </span>{" "}
+                  {languages.find((l) => l.code === language)?.flag}
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                  Interface text will update when you save settings.
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Notifications */}
+        {/* Notification Settings */}
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Bell className="w-5 h-5" />
-                <span>Notifications</span>
+                <span>{t("settings.notifications")}</span>
               </CardTitle>
               <CardDescription>
-                Configure how you want to receive notifications
+                Configure how you receive notifications
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">
-                      Email Booking Notifications
-                    </Label>
-                    <p className="text-sm text-gray-600">
-                      Get notified via email when new bookings are received
+                    <Label>Email Bookings</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive email notifications for new bookings
                     </p>
                   </div>
                   <Switch
@@ -475,11 +512,9 @@ export function BusinessSettings() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">
-                      SMS Booking Notifications
-                    </Label>
-                    <p className="text-sm text-gray-600">
-                      Get notified via SMS for urgent booking requests
+                    <Label>SMS Bookings</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive SMS notifications for urgent bookings
                     </p>
                   </div>
                   <Switch
@@ -502,9 +537,9 @@ export function BusinessSettings() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">Payment Notifications</Label>
-                    <p className="text-sm text-gray-600">
-                      Email alerts for payment status updates
+                    <Label>Email Payments</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive email notifications for payments received
                     </p>
                   </div>
                   <Switch
@@ -527,9 +562,9 @@ export function BusinessSettings() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">Maintenance Alerts</Label>
-                    <p className="text-sm text-gray-600">
-                      Notifications for scheduled maintenance and inspections
+                    <Label>Maintenance Alerts</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive alerts for equipment maintenance schedules
                     </p>
                   </div>
                   <Switch
@@ -558,121 +593,110 @@ export function BusinessSettings() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="w-5 h-5" />
-                <span>Working Hours</span>
+                <span>{t("settings.working_hours")}</span>
               </CardTitle>
               <CardDescription>
                 Set your business operating hours for each day of the week
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {weekDays.map((day) => (
-                <div key={day} className="flex items-center space-x-4">
-                  <div className="w-24">
-                    <Label className="capitalize">{day}</Label>
-                  </div>
-
-                  <Switch
-                    checked={
-                      !localSettings.working_hours[
+            <CardContent>
+              <div className="space-y-4">
+                {weekDays.map((day) => (
+                  <div
+                    key={day}
+                    className="flex items-center justify-between space-x-4"
+                  >
+                    <div className="w-24">
+                      <Label className="capitalize">{day}</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Switch
+                        checked={
+                          !localSettings.working_hours[
+                            day as keyof typeof localSettings.working_hours
+                          ].closed
+                        }
+                        onCheckedChange={(checked) =>
+                          setLocalSettings({
+                            ...localSettings,
+                            working_hours: {
+                              ...localSettings.working_hours,
+                              [day]: {
+                                ...localSettings.working_hours[
+                                  day as keyof typeof localSettings.working_hours
+                                ],
+                                closed: !checked,
+                              },
+                            },
+                          })
+                        }
+                      />
+                      {!localSettings.working_hours[
                         day as keyof typeof localSettings.working_hours
-                      ].closed
-                    }
-                    onCheckedChange={(checked) =>
-                      setLocalSettings({
-                        ...localSettings,
-                        working_hours: {
-                          ...localSettings.working_hours,
-                          [day]: {
-                            ...localSettings.working_hours[
-                              day as keyof typeof localSettings.working_hours
-                            ],
-                            closed: !checked,
-                          },
-                        },
-                      })
-                    }
-                  />
-
-                  {!localSettings.working_hours[
-                    day as keyof typeof localSettings.working_hours
-                  ].closed && (
-                    <>
-                      <Input
-                        type="time"
-                        value={
-                          localSettings.working_hours[
-                            day as keyof typeof localSettings.working_hours
-                          ].start
-                        }
-                        onChange={(e) =>
-                          setLocalSettings({
-                            ...localSettings,
-                            working_hours: {
-                              ...localSettings.working_hours,
-                              [day]: {
-                                ...localSettings.working_hours[
-                                  day as keyof typeof localSettings.working_hours
-                                ],
-                                start: e.target.value,
-                              },
-                            },
-                          })
-                        }
-                        className="w-32"
-                      />
-                      <span className="text-gray-500">to</span>
-                      <Input
-                        type="time"
-                        value={
-                          localSettings.working_hours[
-                            day as keyof typeof localSettings.working_hours
-                          ].end
-                        }
-                        onChange={(e) =>
-                          setLocalSettings({
-                            ...localSettings,
-                            working_hours: {
-                              ...localSettings.working_hours,
-                              [day]: {
-                                ...localSettings.working_hours[
-                                  day as keyof typeof localSettings.working_hours
-                                ],
-                                end: e.target.value,
-                              },
-                            },
-                          })
-                        }
-                        className="w-32"
-                      />
-                    </>
-                  )}
-
-                  {localSettings.working_hours[
-                    day as keyof typeof localSettings.working_hours
-                  ].closed && (
-                    <span className="text-gray-500 italic">Closed</span>
-                  )}
-                </div>
-              ))}
+                      ].closed && (
+                        <>
+                          <Input
+                            type="time"
+                            value={
+                              localSettings.working_hours[
+                                day as keyof typeof localSettings.working_hours
+                              ].start
+                            }
+                            onChange={(e) =>
+                              setLocalSettings({
+                                ...localSettings,
+                                working_hours: {
+                                  ...localSettings.working_hours,
+                                  [day]: {
+                                    ...localSettings.working_hours[
+                                      day as keyof typeof localSettings.working_hours
+                                    ],
+                                    start: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            className="w-24"
+                          />
+                          <span className="text-gray-500">to</span>
+                          <Input
+                            type="time"
+                            value={
+                              localSettings.working_hours[
+                                day as keyof typeof localSettings.working_hours
+                              ].end
+                            }
+                            onChange={(e) =>
+                              setLocalSettings({
+                                ...localSettings,
+                                working_hours: {
+                                  ...localSettings.working_hours,
+                                  [day]: {
+                                    ...localSettings.working_hours[
+                                      day as keyof typeof localSettings.working_hours
+                                    ],
+                                    end: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            className="w-24"
+                          />
+                        </>
+                      )}
+                      {localSettings.working_hours[
+                        day as keyof typeof localSettings.working_hours
+                      ].closed && (
+                        <span className="text-gray-500 italic">Closed</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Save Button */}
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Reset to Defaults
-        </Button>
-        <Button
-          onClick={handleSaveSettings}
-          className="bg-orange-500 hover:bg-orange-600"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Save Settings
-        </Button>
-      </div>
     </div>
   );
 }
