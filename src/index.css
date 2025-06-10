@@ -68,65 +68,9 @@
   }
 }
 
-/* Dark mode specific styles */
+/* Dark mode styles using CSS custom properties to avoid circular dependencies */
 .dark {
   color-scheme: dark;
-}
-
-.dark .bg-white {
-  @apply bg-gray-900;
-}
-
-.dark .text-gray-900 {
-  @apply text-gray-100;
-}
-
-.dark .text-gray-800 {
-  @apply text-gray-200;
-}
-
-.dark .text-gray-700 {
-  @apply text-gray-300;
-}
-
-.dark .text-gray-600 {
-  @apply text-gray-400;
-}
-
-.dark .text-gray-500 {
-  @apply text-gray-500;
-}
-
-.dark .text-gray-400 {
-  @apply text-gray-600;
-}
-
-.dark .border-gray-200 {
-  @apply border-gray-700;
-}
-
-.dark .border-gray-100 {
-  @apply border-gray-800;
-}
-
-.dark .bg-gray-50 {
-  @apply bg-gray-900;
-}
-
-.dark .bg-gray-100 {
-  @apply bg-gray-800;
-}
-
-.dark .bg-gray-200 {
-  @apply bg-gray-700;
-}
-
-.dark .hover\:bg-gray-50:hover {
-  @apply hover:bg-gray-800;
-}
-
-.dark .hover\:bg-gray-100:hover {
-  @apply hover:bg-gray-700;
 }
 
 /* Orange theme colors for both light and dark modes */
@@ -173,13 +117,26 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  background-color: rgb(243 244 246);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: rgb(31 41 55);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  background-color: rgb(209 213 219);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  background-color: rgb(156 163 175);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(107 114 128);
 }
